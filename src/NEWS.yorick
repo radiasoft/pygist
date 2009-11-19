@@ -1,0 +1,88 @@
+23/oct/01 version 1.5.05
+
+gist/browser.c and gist/cgmin.c fix SEGV on q, failure to open ncgm
+
+22/oct/01 version 1.5.04
+
+minor fix to close debian bug
+
+18/oct/01 version 1.5.03
+
+numerous bug fixes after disastrous limited release in x-division:
+(1) PDB files close on quit
+(2) handle include and rdline files with no final newline
+(3) deliver prompt, avoid infinite loop on read from #include
+(4) actually loads hex and drat packages
+(5) handle X expose events properly
+open issues: ibm sp/2 compiler bug on -O mminit.c (compile -g)
+  need compaq cc>=6.4-213 to compile stdio.h with _POSIX_SOURCE
+    (workaround by -D_XOPEN_SOURCE)
+  some sgi machines deliver SIGTRAP on integer divide by zero
+
+31/jul/01 version 1.5.03
+
+yorick/task.c  -- YError fixed to handle SIGINT properly
+yorick/std2.c, i/basfix.i  -- edit_times fixed to allow times, ncycs
+  to be added when variable names are changed
+gist/xbasic.c  -- ChangeMap fixed to do landscape properly
+gist/xbasic.h  -- fix DefaultTop macros to work for other than 100 dpi
+gist/xfancy.c  -- fix SEGV on click-to-zoom for overlapping systems
+play/unix/handler.c  -- fix so multiple SIGINTs with 1 sec work
+
+------------------------------------------------------------------------
+
+version 1.5.02
+
+Mostly for Build-Depends fix to debian package.  Minor fixes to
+yorick/Makefile, configure scripts to try to handle alpha Linux SIGFPE
+problems.
+
+------------------------------------------------------------------------
+
+02/may/01 version 1.5.01
+
+First release of yorick-1.5.  The directory structure and
+configuration scripts have completely changed; see the top-level
+README for more.  The 1.5 version of yorick has the directory
+structure, configuration scripts, and portability layer for
+yorick-2.0, but still has the 1.4 interpreter.  The MacOS portion of
+the portability layer is not yet present, but the Windows portion is
+complete or nearly complete.
+
+There are a few new features:
+
+1. RGB colors supported for color= keyword, pli, plf, plfp
+   see help,color or help,pli for more information
+
+2. lsdir, mkdir, rmdir functions added so yorick can read and
+   manipulate directories by itself
+
+3. i86_primitives and other modern binary formats added
+   see help,createb and help,__i86 for more information
+
+4. cheby.i, convol.i, dawson.i, kepler.i added to interpreted
+   library
+
+5. added "hex" 3D transport solver (similar to drat 2D solver)
+
+6. improved the emacs/yorick.el package again, mostly by removing
+   unwanted "improvements" to emacs; see emacs/README
+
+The yorick homepage and Web-based documentation has also been
+completely reworked.  Visit
+
+   ftp://ftp-icf.llnl.gov/pub/Yorick/
+
+or the new homepage
+
+   ftp://ftp-icf.llnl.gov/pub/Yorick/doc/index.html
+
+You can download all this Web-based documentation (and the yorick and
+texi2html scripts used to create it) from the downloads page there.
+It is based on the work of Robert Cannon, who deserves most of the
+credit but none of the blame for the new look.  Perhaps his best idea
+is the HTML-ized source code for the entire interpreted library, which
+makes it much easier to study the interpreted source code that comes
+with the yorick distribution.  Ferdinand Jamitzky also helped by
+making a first cut at converting the Quick Reference Cards to HTML; it
+now works pretty much as well as the PDF or printed versions.

@@ -1,0 +1,13 @@
+
+The fpuset needs to be modifed. Add the following to the file
+src/play/unix/config.h
+
+#define FPU_GCC_I86
+#define FPU_IGNORE
+
+When building the gist executable, the Make.cfg file needs to be modified,
+adding the line below.
+
+RANLIB=ranlib
+
+For some reason, the build just messes this up on the Mac.

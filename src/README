@@ -1,0 +1,44 @@
+$Id: README,v 1.1 2009/11/19 23:44:46 dave Exp $
+README for pygist-1.5/src
+-------------------------
+
+Part of this directory were abstracted from the full yorick distribution.
+Specifically, the gist and play subdirectories and the configure/build
+structure.  (work done by Dave Munro)
+
+The work in this directory does three things for pygist:
+
+- Makes libpyg.a for the shared library gistCmodule.so.
+
+- Installs the yorick palette and style files (in subdirectory g)
+  in the user-specified site-independent Y_SITE directory.
+
+- Installs the gist browser in a site-dependent YHOME directory.
+  For simplicity, can choose Y_SITE = Y_HOME.
+
+Changes need to yorick sources required:
+----------------------------------------
+See yorick.changes.
+
+- We only change play/unix/ugetc.c for pygist.
+
+Original Installation Process 
+-----------------------------
+(Things are now handled in top-level setup.py; comments below preserved
+for understanding.)
+
+Suppose everything is to be installed in /usr/apps/python/opt. 
+The instructions would then be:
+
+   setenv PYTHONHOME /usr/apps/python/opt
+   make ysite Y_SITE=${PYTHONHOME}
+       (some scripting is echoed to the terminal)
+   make config
+   make 
+   make install 
+
+   cd ..
+
+After this is done, return to the main directory (pygist-1.5) to 
+perform the Python module installation.
+

@@ -1,0 +1,38 @@
+SHELL=/bin/sh
+MAKE=make
+AR=ar
+include ./Make.cfg
+
+# these python things belong in Make.cfg eventually
+PYCONFIG_INC=-I.
+
+# 10/26/01 llc On Teracluster, the following does not work.
+#              Replace with system-dependent include directory.
+#PYTHON_INC=-I/usr/gapps/python/src/Python-2.1/Include
+ 
+PYTHON_INC=-I/usr/gapps/python/${SYS_TYPE}/opt/include/python2.1
+NUMPY_INC=-I/usr/gapps/python/src/Numeric-20.0.0/Include/Numeric
+PYG_INCS=$(PYCONFIG_INC) $(PYTHON_INC) $(NUMPY_INC) -Igist -Iplay
+
+CFLAGS=$(COPTIONS) -I. -I../play
+X11LIB=$(XLIB) -lX11
+CCLOAD=$(CC) $(LDOPTIONS) $(LDFLAGS)
+SYS_LIBS=$(X11LIB) $(MATHLIB) $(FPELIB)
+
+#  .. LLC:  Do not put gistCmodule.o in libpyg.a.
+# OBJS=gistCmodule.o
+OBJS =
+
+all: libpyg.a 
+
+libpyg.a: Make.cfg $(OBJS)
+	@cd gist; $(MAKE) libpyg
+	$(AR) r libpyg.a $(OBJS)
+	$(RANLIB) $@
+
+gistCmodule.o:
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PYG_INCS) -c gistCmodule.c
+
+gistCmodule.so: libpyg.a
+	ld -shared -expect_unresolved "*"  ./gistCmodule.o  -L. -lpyg -L/usr/lib -lX11 -lm  -o ./gistCmodule.so
+
