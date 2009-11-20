@@ -210,10 +210,14 @@ elif $CC -DFPU_IRIX $args >cfg.08 2>&1; then
   echo "using FPU_IRIX (SIGFPE delivery), but no libfpe??"
   echo '#define FPU_IRIX' >>config.0h
   fpedef=-DFPU_IRIX
-elif $CC -DFPU_MACOSX $args >cfg.08 2>&1; then
-  echo "using FPU_MACOSX (SIGFPE delivery)"
-  echo '#define FPU_MACOSX' >>config.0h
-  fpedef=-DFPU_MACOSX
+elif $CC -DFPU_MACOSX_PPC $args >cfg.08 2>&1; then
+  echo "using FPU_MACOSX_PPC (SIGFPE delivery)"
+  echo '#define FPU_MACOSX_PPC' >>config.0h
+  fpedef=-DFPU_MACOSX_PPC
+elif $CC -DFPU_MACOSX_INTEL $args >cfg.08 2>&1; then
+  echo "using FPU_MACOSX_INTEL (SIGFPE delivery)"
+  echo '#define FPU_MACOSX_INTEL' >>config.0h
+  fpedef=-DFPU_MACOSX_INTEL
 elif $CC -DTEST_GCC $commonargs >cfg.08 2>&1; then
   if $CC -DFPU_ALPHA_LINUX $args >cfg.08 2>&1; then
     echo "using FPU_ALPHA_LINUX (SIGFPE delivery)"

@@ -44,7 +44,7 @@
 #
 #  ---------------------------------------------------------------------
 
-__revision__ = "$Id: setup.py,v 1.1 2009/11/19 23:44:45 dave Exp $"
+__revision__ = "$Id: setup.py,v 1.2 2009/11/20 01:01:55 dave Exp $"
 
 import os
 import os.path
@@ -72,6 +72,12 @@ macosx = 0
 # --- MAC now defaults to X11 (instead of cocoa)
 #if sys.platform=='darwin':
 #    macosx = 1
+
+if sys.platform == 'darwin':
+    if os.environ['MACHTYPE'] == 'i386':
+        os.environ['ARCHFLAGS'] = '-arch i386'
+    elif os.environ['MACHTYPE'] == 'powerpc':
+        os.environ['ARCHFLAGS'] = '-arch ppc'
 
 for keyword in sys.argv:
     if keyword=='--x11':
@@ -171,6 +177,9 @@ int main(int argc, char *argv[])
         else:
             print "libm does not contain exp10, will emulate"
             self.configfile.write("NO_EXP10=-DNO_EXP10\n")
+        if sys.platform == 'darwin' and os.environ['MACHTYPE'] == 'i386':
+            # there is probably a better way to do this, but here goes...
+            self.configfile.write("RANLIB=ranlib\n")
 #----------------------------------------------------------------------
     def config_unix(self):
         # begin play/unix configuration
@@ -323,10 +332,14 @@ main(int argc, char *argv[])
             print "using FPU_IRIX (SIGFPE delivery), but no libfpe??"
             configfile.write('#define FPU_IRIX\n')
             fpedef="-DFPU_IRIX"
-        elif self.try_link("#define FPU_MACOSX\n"+testcode):
-            print "using FPU_MACOSX (SIGFPE delivery)"
-            configfile.write('#define FPU_MACOSX\n')
-            fpedef="-DFPU_MACOSX"
+        elif self.try_link("#define FPU_MACOSX_PPC\n"+testcode):
+            print "using FPU_MACOSX_PPC (SIGFPE delivery)"
+            configfile.write('#define FPU_MACOSX_PPC\n')
+            fpedef="-DFPU_MACOSX_PPC"
+        elif self.try_link("#define FPU_MACOSX_INTEL\n"+testcode):
+            print "using FPU_MACOSX_INTEL (SIGFPE delivery)"
+            configfile.write('#define FPU_MACOSX_INTEL\n')
+            fpedef="-DFPU_MACOSX_INTEL"
         elif self.try_compile("#define TEST_GCC\n"+testgcc):
             if self.try_link("#define FPU_ALPHA_LINUX\n" + testcode):
                 print "using FPU_ALPHA_LINUX (SIGFPE delivery)"

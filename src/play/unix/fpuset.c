@@ -1,5 +1,5 @@
 /*
- * fpuset.c -- $Id: fpuset.c,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * fpuset.c -- $Id: fpuset.c,v 1.2 2009/11/20 01:01:55 dave Exp $
  * set up FPU to trap floating point exceptions
  * - this is very non-portable, not covered by ANSI C, POSIX, or even C9X
  * - if you port to a new platform (eg- Ultrix) please contact the author
@@ -228,7 +228,7 @@ u_fpu_setup(int when)
 {
 }
 
-#elif defined(FPU_MACOSX)
+#elif defined(FPU_MACOSX_PPC)
 
 #include <architecture/ppc/fp_regs.h>
 #include <mach/mach.h>
@@ -297,6 +297,20 @@ u_fpu_setup(int when)
     }
   }
   looping = 0;
+}
+
+#elif defined(FPU_MACOSX_INTEL)
+
+#include <xmmintrin.h>
+
+void
+u_fpu_setup(int when)
+{
+  if (when <= 0) {
+_MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID
+                                                & ~_MM_MASK_DIV_ZERO
+                                                & ~_MM_MASK_OVERFLOW);
+  }
 }
 
 #else
