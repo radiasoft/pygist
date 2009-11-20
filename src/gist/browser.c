@@ -1,7 +1,7 @@
 /*
  * BROWSER.C
  *
- * $Id: browser.c,v 1.1 2009/11/19 23:44:47 dave Exp $
+ * $Id: browser.c,v 1.2 2009/11/20 01:26:34 dave Exp $
  *
  * Main for GIST CGM viewer
  *
@@ -516,10 +516,14 @@ static int Help(int help)
     p_stderr("  The help command explains specific syntax, e.g.:\n");
     p_stderr("     help cgm\n");
     p_stderr("  describes the syntax of the cgm command.\n");
-    p_stderr("  Five commands can be typed to a gist X window:\n");
+    p_stderr("  These commands can be typed to a gist X window:\n");
     p_stderr("     nf   - forward n pages and draw (default 1)\n");
     p_stderr("     nb   - backward n pages and draw (default 1)\n");
+    p_stderr("     nn   - set step size for F and B (default 10)\n");
+    p_stderr("     nF   - forward n*step size pages and draw (default 10)\n");
+    p_stderr("     nB   - backward n*step size pages and draw (default 10)\n");
     p_stderr("     ng   - go to page n and draw (default 1)\n");
+    p_stderr("     G    - go to last frame\n");
     p_stderr("     s    - send current page\n");
     p_stderr("     q    - quit\n");
 
@@ -1088,11 +1092,15 @@ static int Special(int help)
     if (cSuffix=='f')
       p_stderr("  Forward n (default 1) pages, then draw\n");
     else if (cSuffix=='F')
-      p_stderr("  Forward 10*n (default 10) pages, then draw\n");
+      p_stderr("  Forward n*step size (default 10) pages, then draw\n");
     else if (cSuffix=='b')
       p_stderr("  Backward n (default 1) pages, then draw\n");
     else if (cSuffix=='B')
-      p_stderr("  Backward 10*n (default 10) pages, then draw\n");
+      p_stderr("  Backward n*step size (default 10) pages, then draw\n");
+    else if (cSuffix=='n')
+      p_stderr("  Set the step size (default 10)\n");
+    else if (cSuffix=='G')
+      p_stderr("  Go to the last frame, then draw\n");
     else
       p_stderr("  Go to page n (default 1), then draw\n");
     return 0;
