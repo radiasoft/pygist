@@ -106,6 +106,20 @@ EOF
           break
         fi
       done
+      if test $xfound = yes; then
+        xlist=`echo $xlist | sed s/lib/lib64/g`
+        for d in $xlist; do
+          xall=`echo $d/libX11*`
+          if test "$xall" != $d/'libX11*'; then
+            xlib=-L$d
+            if $CC $args $xlib -lX11 $LIBS >cfg.10d 2>&1; then
+              xfound=both
+              if test $debug = no; then rm -f cfg.10c; fi
+            fi
+            break
+          fi
+        done
+      fi
     fi
   fi
   if test $xfound = yes; then
