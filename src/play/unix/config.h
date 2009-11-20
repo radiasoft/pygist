@@ -1,6 +1,8 @@
-/* config.h from config.sh script Tue Jun  2 16:35:16 PDT 2009
- * Linux ife5.lbl.gov 2.6.26.8-57.fc8 #1 SMP Thu Dec 18 19:19:45 EST 2008 i686 i686 i386 GNU/Linux
+/* config.h from config.sh script Thu Nov 19 16:56:33 2009
+ * Darwin grote1lt1.dhcp.lbl.gov 9.8.0 Darwin Kernel Version 9.8.0: Wed Jul 15 16:55:01 PDT 2009; root:xnu-1228.15.4~1/RELEASE_I386 i386
  */
 #define USE_GETRUSAGE
 #define USE_GETTIMEOFDAY
-#define FPU_GCC_I86
+#define FPU_MACOSX_INTEL
+#define USE_SELECT
+#define HAVE_SYS_SELECT_H
