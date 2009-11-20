@@ -44,7 +44,7 @@
 #
 #  ---------------------------------------------------------------------
 
-__revision__ = "$Id: setup.py,v 1.2 2009/11/20 01:01:55 dave Exp $"
+__revision__ = "$Id: setup.py,v 1.3 2009/11/20 01:05:25 dave Exp $"
 
 import os
 import os.path
@@ -74,9 +74,10 @@ macosx = 0
 #    macosx = 1
 
 if sys.platform == 'darwin':
-    if os.environ['MACHTYPE'] == 'i386':
+    machtype = os.environ.get('MACHTYPE','i386')
+    if machtype == 'i386':
         os.environ['ARCHFLAGS'] = '-arch i386'
-    elif os.environ['MACHTYPE'] == 'powerpc':
+    elif machtype == 'powerpc':
         os.environ['ARCHFLAGS'] = '-arch ppc'
 
 for keyword in sys.argv:
