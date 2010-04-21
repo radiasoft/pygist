@@ -1,7 +1,7 @@
 /*
  * DRAW.C
  *
- * $Id: draw.c,v 1.1 2009/11/19 23:44:47 dave Exp $
+ * $Id: draw.c,v 1.2 2010/04/21 00:19:26 dave Exp $
  *
  * Implement display list portion of GIST C interface
  *
@@ -1587,6 +1587,8 @@ int GdContours(int noCopy, GaQuadMesh *mesh, int region,
     gistD.noCopy|= NOCOPY_TRI;
   } else {
     el->mesh.triangle= Copy1(mesh->triangle, sizeof(short)*len);
+    /* DPG zero out the array if new memory had been allocated */
+    if (!mesh->triangle) memset(el->mesh.triangle,0,sizeof(short)*len);
     if (!el->mesh.triangle) { ContoursKill(el);  return -1; }
   }
 
