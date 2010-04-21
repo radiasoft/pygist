@@ -1,5 +1,5 @@
 /* 
- *  $Id: gistCmodule.c,v 1.1 2009/11/19 23:44:46 dave Exp $
+ *  $Id: gistCmodule.c,v 1.2 2010/04/21 00:18:18 dave Exp $
  *  --------------------------------------------------------------------
  *  Copyright (c) 1996, 1997, The Regents of the University of California.
  *  All rights reserved.  See Legal.htm for full text and disclaimer. 
@@ -3829,7 +3829,7 @@ static PyObject *plc (PyObject * self, PyObject * args, PyObject * kd)
   int i;  
   char *z_name= 0, *y_name= 0, *x_name= 0, *r_name= 0;
   long iMax = 0, jMax = 0, nLevels = 0;
-  double *z = 0, *levels = 0; /* UPDATE */
+  double *z = 0, *levels = 0, *levels1 = 0; /* UPDATE */
   PyObject * kwt[NELT(plcKeys) - 1];
   char *errstr =
     "plc requires 2D arguments (z [ , y, x, ireg, levs = levels ] )";
@@ -3893,11 +3893,13 @@ static PyObject *plc (PyObject * self, PyObject * args, PyObject * kd)
     lev = (double *) A_DATA (lap);
     nLevels = A_SIZE (lap);
     levels = p_malloc (sizeof(double) * nLevels);
+    levels1 = levels; /* DPG save a reference so it can be freed later */
     for(i = 0; i < nLevels; i++)
       levels[i] = lev[i];
     if (levels)  {
       levels= CopyLevels(levels, nLevels);
     }
+    SAFE_FREE(levels1); /* DPG this is where it is freed */
     removeFromArrayList ( (PyObject *) lap);
   } 
 
