@@ -44,7 +44,7 @@
 #
 #  ---------------------------------------------------------------------
 
-__revision__ = "$Id: setup.py,v 1.3 2009/11/20 01:05:25 dave Exp $"
+__revision__ = "$Id: setup.py,v 1.4 2010/07/29 22:43:58 dave Exp $"
 
 import os
 import os.path
@@ -74,11 +74,28 @@ macosx = 0
 #    macosx = 1
 
 if sys.platform == 'darwin':
-    machtype = os.environ.get('MACHTYPE','i386')
-    if machtype == 'i386':
-        os.environ['ARCHFLAGS'] = '-arch i386'
-    elif machtype == 'powerpc':
-        os.environ['ARCHFLAGS'] = '-arch ppc'
+    # --- Machines running csh/tcsh seem to have MACHTYPE defined and this is the safest way to set -arch.
+    if os.environ.has_key('MACHTYPE'):
+        if os.environ['MACHTYPE'] == 'i386':
+            os.environ['ARCHFLAGS'] = '-arch i386'
+        elif os.environ['MACHTYPE'] == 'x86_64':
+            os.environ['ARCHFLAGS'] = '-arch x86_64'
+        elif os.environ['MACHTYPE'] == 'powerpc':
+            os.environ['ARCHFLAGS'] = '-arch ppc'
+    else:
+        # --- If the shell is bash, MACHTYPE is undefined. So get what we can
+        # --- from uname. We will assume that if we are running Snow Leopard
+        # --- we are -arch x86-64 and if running Leopard on intel we are
+        # --- -arch i386. This can be over-ridden by defining MACHTYPE.
+        archtype = os.uname()[-1]
+        if archtype in ['Power Macintosh','ppc']:
+            os.environ['ARCHFLAGS'] = '-arch ppc'
+        elif archtype == 'i386':
+            kernel_major = eval(os.uname()[2].split('.')[0])
+            if kernel_major < 10 :
+                os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
+            else:
+                os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
 
 for keyword in sys.argv:
     if keyword=='--x11':
