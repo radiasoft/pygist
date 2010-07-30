@@ -44,7 +44,7 @@
 #
 #  ---------------------------------------------------------------------
 
-__revision__ = "$Id: setup.py,v 1.5 2010/07/30 20:41:09 dave Exp $"
+__revision__ = "$Id: setup.py,v 1.6 2010/07/30 21:06:19 dave Exp $"
 
 import os
 import os.path
@@ -99,8 +99,6 @@ if sys.platform == 'darwin':
                 os.environ['ARCHFLAGS'] = '-arch i386'  # Leopard or earlier
             else:
                 os.environ['ARCHFLAGS'] = '-arch x86_64'  # Snow Leopard
-
-print os.environ['ARCHFLAGS']
 
 for keyword in sys.argv:
     if keyword=='--x11':
