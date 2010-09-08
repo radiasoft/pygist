@@ -1,5 +1,5 @@
 /*
- * fpuset.c -- $Id: fpuset.c,v 1.2 2009/11/20 01:01:55 dave Exp $
+ * fpuset.c -- $Id: fpuset.c,v 1.3 2010/09/08 22:17:41 dave Exp $
  * set up FPU to trap floating point exceptions
  * - this is very non-portable, not covered by ANSI C, POSIX, or even C9X
  * - if you port to a new platform (eg- Ultrix) please contact the author
@@ -306,11 +306,23 @@ u_fpu_setup(int when)
 void
 u_fpu_setup(int when)
 {
-  if (when <= 0) {
+/* Turn off the setting of exceptions. There is something subtle going wrong
+ * during the config. The _configtest is compiled with the -Os option for
+ * optimization and this causes the test routine to lock up. I can't tell
+ * what's going wrong, and web searches don't turn up anything useful.
+ * I wasn't able to narrow down where the error was happening or what compiler
+ * option was causing the problem.
+ * Without the -Os option, the routine runs fine and the errors are trapped
+ * appropriately. It is best to ignore errors for now until this can be sorted
+ * out.
+ * */
+ /*
+  if (when < 0) {
 _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~_MM_MASK_INVALID
                                                 & ~_MM_MASK_DIV_ZERO
                                                 & ~_MM_MASK_OVERFLOW);
   }
+  */
 }
 
 #else
