@@ -1,7 +1,7 @@
 /*
  * BROWSER.C
  *
- * $Id: browser.c,v 1.2 2009/11/20 01:26:34 dave Exp $
+ * $Id: browser.c,v 1.3 2011/03/10 19:07:19 grote Exp $
  *
  * Main for GIST CGM viewer
  *
@@ -1211,6 +1211,7 @@ static void HandleOther(Engine *engine, int k, int md)
       if (xPrefix==0) {xFrameStep = 10;}
       else {xFrameStep = xPrefix;}
     } else if (go==5) {
+      p_stdout("\n");
       p_quit();
     }
     xPrefix= 0;
