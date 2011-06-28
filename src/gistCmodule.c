@@ -1,5 +1,5 @@
 /* 
- *  $Id: gistCmodule.c,v 1.2 2010/04/21 00:18:18 dave Exp $
+ *  $Id: gistCmodule.c,v 1.3 2011/06/28 17:32:46 grote Exp $
  *  --------------------------------------------------------------------
  *  Copyright (c) 1996, 1997, The Regents of the University of California.
  *  All rights reserved.  See Legal.htm for full text and disclaimer. 
@@ -5959,6 +5959,7 @@ static int set_def_reg (int nr, int nc)
  * return 0 if error. */
 static int set_limit (PyObject * ob, double *lim, int *flags, int fval)
 {
+  PyObject *floatob;
   if (PyString_Check (ob)) {
     char *s = PyString_AsString (ob);
     if (*s == 'e' || *s == 'E') {
@@ -5968,12 +5969,10 @@ static int set_limit (PyObject * ob, double *lim, int *flags, int fval)
     } else {
       return 0; /* Error */
     }
-  } else if (PyFloat_Check (ob)) {
-    *lim = PyFloat_AsDouble (ob);
+  } else if ((floatob = PyNumber_Float (ob)) != NULL) {
+    *lim = PyFloat_AsDouble (floatob);
     *flags &= ~fval;
-  } else if (PyInt_Check (ob)) {
-    *lim = (double) PyInt_AsLong (ob);
-    *flags &= ~fval;
+    Py_DECREF (floatob);
   } else {
     return 0; /* Error */
   }
@@ -6165,6 +6164,7 @@ static long setkw_color (PyObject * v, unsigned long *t, char *kw)
 {
   unsigned long color = P_FG;
   unsigned long colors[3] = { 0, 0, 0 };
+  PyObject *intv;
 
   if (PyString_Check (v)) {
     char *s = PyString_AsString (v);
@@ -6194,8 +6194,9 @@ static long setkw_color (PyObject * v, unsigned long *t, char *kw)
                "Use fg, bg, or 8 primaries only", s);
       return (long) ERRSS (errstr);
     }
-  } else if (PyInt_Check (v)) {
-    int color1 = PyInt_AsLong (v);
+  } else if ((intv = PyNumber_Int (v)) != NULL) {
+    int color1 = PyInt_AsLong (intv);
+    Py_DECREF(intv);
     if ( color1 < 0 )  {
        color = (color1 & 0xff);  /* take right 8 bits */
     }
@@ -6493,7 +6494,7 @@ static long setz_mesh (
 static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3])
 {
   int i, size = PyTuple_Size (ob);
-  PyObject *item;
+  PyObject *item,*intitem;
   if ( size != 3 ) {
     return (long) ERRSS ("Color tuple must have 3 colors");
   }
@@ -6501,10 +6502,11 @@ static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3])
     if ((item = PyTuple_GetItem (ob, i)) == 0) {
       return (long) ERRSS ("Error unpacking color tuple.");
     }
-    if (PyInt_Check (item)) {
-      color_triple[i] = PyInt_AsLong (item);
+    if ((intitem = PyNumber_Int(item)) != NULL) {
+      color_triple[i] = PyInt_AsLong (intitem);
+      Py_DECREF (intitem);
     } else {
-      return (long) ERRSS ("Color tuple: expected integer value ");
+      return (long) ERRSS ("Color tuple: could not be converted to int");
     }
   }
   return 1;
@@ -6514,7 +6516,7 @@ static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3])
 static long unpack_limit_tuple (PyObject * ob, double limits[], int *flags)
 {
   int i, size = PyTuple_Size (ob);
-  PyObject *item;
+  PyObject *item,*floatitem,*intitem;
   if (5 != size) {
     return (long) ERRSS ("Old limits must have four doubles + 1 integer");
   }
@@ -6522,21 +6524,21 @@ static long unpack_limit_tuple (PyObject * ob, double limits[], int *flags)
     if ((item = PyTuple_GetItem (ob, i)) == 0) {
       return (long) ERRSS ("Error unpacking limit tuple.");
     }
-    if (PyFloat_Check (item)) {
-      limits[i] = PyFloat_AsDouble (item);
-    } else if (PyInt_Check (item)) {
-      limits[i] = (double) PyInt_AsLong (item);
+    if ((floatitem = PyNumber_Float(item)) != NULL) {
+      limits[i] = PyFloat_AsDouble (floatitem);
+      Py_DECREF (floatitem);
     } else {
-      return (long) ERRSS ("Expected floating point value");
+      return (long) ERRSS ("Input could not be converted to a floating point value");
     }
   }
   if ((item = PyTuple_GetItem (ob, 4)) == 0) {
     return (long) ERRSS ("Error unpacking flags in limit tuple.");
   }
-  if (PyInt_Check (item)) {
-    *flags = (int) PyInt_AsLong (item);
+  if ((intitem = PyNumber_Int (item)) != NULL) {
+    *flags = (int) PyInt_AsLong (intitem);
+    Py_DECREF (intitem);
   } else {
-    return (long) ERRSS ("Expected integer value");
+    return (long) ERRSS ("Flags could not be converted to an int");
   }
   return 1;
 }
