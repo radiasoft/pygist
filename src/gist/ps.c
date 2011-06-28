@@ -1,7 +1,7 @@
 /*
  * PS.C
  *
- * $Id: ps.c,v 1.1 2009/11/19 23:44:48 dave Exp $
+ * $Id: ps.c,v 1.2 2011/06/28 18:45:07 grote Exp $
  *
  * Implement the PostScript engine for GIST.
  *
@@ -851,7 +851,11 @@ static int DrwText(Engine *engine, GpReal x0, GpReal y0, const char *text)
   int xll, yll, xur, yur, alignH, alignV;
   int count, nchars, firstPass;
   char *now, c;
+  const char *t;
   int state= 0;
+
+  /* zero size text can confuse postscript interpreters */
+  if ((int)(gistA.t.height*NDC_TO_PS+0.5) <= 0) return 0;
 
   if (CheckClip(psEngine) || SetupText(psEngine)) return 1;
   alignH= psEngine->curAlignH;
@@ -945,7 +949,8 @@ static int DrwText(Engine *engine, GpReal x0, GpReal y0, const char *text)
   nchars= psEngine->nchars;
   now= psEngine->line+nchars;
   firstPass= 1;
-  while ((text= GtNextLine(text, &count, gistA.t.orient)) || firstPass) {
+  while ((t= GtNextLine(text, &count, gistA.t.orient)) || firstPass) {
+    text= t;
     firstPass= 0;
     state= 0;
 
@@ -1282,7 +1287,6 @@ static int DrawCells(Engine *engine, GpReal px, GpReal py, GpReal qx,
         now[nc++] = hexChar[ccell[2]&0xf];
       } else {
         color= colors[i+j];
-        i++;
         if (color>=nColors && nColors>0) color= nColors-1;
         if (!colorMode) color= (P_R(palette[color])+
                                 P_G(palette[color])+P_B(palette[color]))/3;
@@ -1293,6 +1297,7 @@ static int DrawCells(Engine *engine, GpReal px, GpReal py, GpReal qx,
           now[nc++]= hexChar[color];
         }
       }
+      i++;
     }
     now[nc]= '\0';
     psEngine->nchars= nc;
