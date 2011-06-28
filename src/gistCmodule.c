@@ -1,5 +1,5 @@
 /* 
- *  $Id: gistCmodule.c,v 1.3 2011/06/28 17:32:46 grote Exp $
+ *  $Id: gistCmodule.c,v 1.4 2011/06/28 18:03:57 grote Exp $
  *  --------------------------------------------------------------------
  *  Copyright (c) 1996, 1997, The Regents of the University of California.
  *  All rights reserved.  See Legal.htm for full text and disclaimer. 
@@ -6194,7 +6194,18 @@ static long setkw_color (PyObject * v, unsigned long *t, char *kw)
                "Use fg, bg, or 8 primaries only", s);
       return (long) ERRSS (errstr);
     }
-  } else if ((intv = PyNumber_Int (v)) != NULL) {
+  }
+
+  /* Handle case of 3 element array for trucolor */
+
+  else if ( v && PyTuple_Check (v) ) {  
+     if (!unpack_color_tuple ( v, colors)) {
+        return (long) NULL;
+     }
+     color = P_RGB(colors[0],colors[1],colors[2]);
+  }
+
+  else if ((intv = PyNumber_Int (v)) != NULL) {
     int color1 = PyInt_AsLong (intv);
     Py_DECREF(intv);
     if ( color1 < 0 )  {
@@ -6205,15 +6216,8 @@ static long setkw_color (PyObject * v, unsigned long *t, char *kw)
     }
   } 
 
-  /* Handle case of 3 element array for trucolor */
-
-  else if ( v && PyTuple_Check (v) ) {  
-     if (!unpack_color_tuple ( v, colors)) {
-        return (long) NULL;
-     }
-     color = P_RGB(colors[0],colors[1],colors[2]);
-  }
   else  {
+    PyErr_Clear();
     return (long) ERRSS ("Color keyword value must be string, integer, or a triple (r,g,b)");
   }
   *t = color;
@@ -6506,6 +6510,7 @@ static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3])
       color_triple[i] = PyInt_AsLong (intitem);
       Py_DECREF (intitem);
     } else {
+      PyErr_Clear();
       return (long) ERRSS ("Color tuple: could not be converted to int");
     }
   }
@@ -6528,6 +6533,7 @@ static long unpack_limit_tuple (PyObject * ob, double limits[], int *flags)
       limits[i] = PyFloat_AsDouble (floatitem);
       Py_DECREF (floatitem);
     } else {
+      PyErr_Clear();
       return (long) ERRSS ("Input could not be converted to a floating point value");
     }
   }
@@ -6538,6 +6544,7 @@ static long unpack_limit_tuple (PyObject * ob, double limits[], int *flags)
     *flags = (int) PyInt_AsLong (intitem);
     Py_DECREF (intitem);
   } else {
+    PyErr_Clear();
     return (long) ERRSS ("Flags could not be converted to an int");
   }
   return 1;
