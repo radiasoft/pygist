@@ -2,7 +2,7 @@
    DRAW0.C
    Virtual functions for Drauing class.
 
-   $Id: draw0.c,v 1.1 2009/11/19 23:44:47 dave Exp $
+   $Id: draw0.c,v 1.2 2011/06/28 18:45:57 grote Exp $
  */
 /*    Copyright (c) 1994.  The Regents of the University of California.
                     All rights reserved.  */
@@ -1053,10 +1053,11 @@ static int DisjointScan(void *el, int flags, GpBox *limits)
     e->el.box.xmin= e->logBox.xmin;
     e->el.box.xmax= e->logBox.xmax;
     x= e->xlog;
-    if (!e->xqlog && GetLogZ(e->n, e->xq, &e->xqlog,
-                             &xymin, &xymax)) return 1;
-    if (xymin<e->el.box.xmin) e->el.box.xmin= e->logBox.xmin;
-    if (xymax>e->el.box.xmax) e->el.box.xmax= e->logBox.xmax;
+    if (!e->xqlog) {
+      if (GetLogZ(e->n, e->xq, &e->xqlog, &xymin, &xymax)) return 1;
+      if (xymin<e->el.box.xmin) e->el.box.xmin= e->logBox.xmin;
+      if (xymax>e->el.box.xmax) e->el.box.xmax= e->logBox.xmax;
+    }
     xq= e->xqlog;
   } else {
     e->el.box.xmin= e->linBox.xmin;
@@ -1070,10 +1071,11 @@ static int DisjointScan(void *el, int flags, GpBox *limits)
     e->el.box.ymin= e->logBox.ymin;
     e->el.box.ymax= e->logBox.ymax;
     y= e->ylog;
-    if (!e->yqlog && GetLogZ(e->n, e->yq, &e->yqlog,
-                             &xymin, &xymax)) return 1;
-    if (xymin<e->el.box.ymin) e->el.box.ymin= e->logBox.ymin;
-    if (xymax>e->el.box.ymax) e->el.box.ymax= e->logBox.ymax;
+    if (!e->yqlog) {
+      if (GetLogZ(e->n, e->yq, &e->yqlog, &xymin, &xymax)) return 1;
+      if (xymin<e->el.box.ymin) e->el.box.ymin= e->logBox.ymin;
+      if (xymax>e->el.box.ymax) e->el.box.ymax= e->logBox.ymax;
+    }
     yq= e->yqlog;
   } else {
     e->el.box.ymin= e->linBox.ymin;
