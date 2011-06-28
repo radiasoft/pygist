@@ -1,7 +1,7 @@
 /*
  * CGMIN.C
  *
- * $Id: cgmin.c,v 1.1 2009/11/19 23:44:47 dave Exp $
+ * $Id: cgmin.c,v 1.2 2011/06/28 18:24:12 grote Exp $
  *
  * Define the CGM reader/echoer for GIST.
  *
@@ -646,10 +646,10 @@ n_fread(void *ptr, unsigned long nbytes, CGM *cgm)
       }
       n = valid - n;
       if (n > 0) {
-        if (n >= nbytes) {
+        if ((unsigned long)n >= nbytes) {
           memcpy(out, buf, nbytes);
           cgm->pos += nbytes;
-          if (n == nbytes) cgm->valid = 0;
+          if ((unsigned long)n == nbytes) cgm->valid = 0;
           return nread+nbytes;
         }
         memcpy(out, buf, n);
@@ -970,7 +970,7 @@ static long ReadParameters(long nOctets, GpColor *colors, long maxColors)
         currentCmd+= n;
         cmdLength-= n;
       } else {
-        if (n_fread(newParams+nTot, n, currentCGM)!=n) {
+        if (n_fread(newParams+nTot, n, currentCGM)!=(unsigned long)n) {
           Warning("fread failed on CGM file ", currentCGM->name);
           return -1L;
         }
