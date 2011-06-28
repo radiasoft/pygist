@@ -1,7 +1,7 @@
 /*
  * CGM.C
  *
- * $Id: cgm.c,v 1.1 2009/11/19 23:44:47 dave Exp $
+ * $Id: cgm.c,v 1.2 2011/06/28 18:39:06 grote Exp $
  *
  * Implement the CGM binary metafile engine for GIST.
  *
@@ -1126,6 +1126,9 @@ static int DrwText(Engine *engine, GpReal x0, GpReal y0, const char *text)
   long len;
   const char *t;
 
+  /* do not try to output zero size text */
+  if ((short)(0.8*gistA.t.height*cgmEngine->scale+0.5) <= 0) return 0;
+
   CheckClip(cgmEngine);
   if (SetupText(cgmEngine)) return 1;
   file= cgmEngine->file;
@@ -1361,6 +1364,7 @@ static int DrawCells(Engine *engine, GpReal px, GpReal py, GpReal qx,
 
     now= NextPartition(buffer, nCells, &lPart);
   }
+  p_free(buffer);
 
   return 0;
 }
