@@ -1,7 +1,7 @@
 /*
  * GTEXT.C
  *
- * $Id: gtext.c,v 1.1 2009/11/19 23:44:47 dave Exp $
+ * $Id: gtext.c,v 1.2 2011/06/28 18:28:45 grote Exp $
  *
  * Define GIST text utilities
  *
@@ -55,7 +55,7 @@ int GtTextShape(const char *text, const GpTextAttribs *t,
    a count of the number of characters to the next '\n' or '\0'.  */
 const char *GtNextLine(const char *text, int *nChars, int path)
 {
-  char first= text[0];
+  char first= text? text[0] : '\0';
 
   if (!first) {
     *nChars= 0;
