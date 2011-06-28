@@ -1,7 +1,7 @@
 /*
  * TICK.C
  *
- * $Id: tick.c,v 1.1 2009/11/19 23:44:48 dave Exp $
+ * $Id: tick.c,v 1.2 2011/06/28 18:33:05 grote Exp $
  *
  * Implement ticks and labels for GIST coordinate systems
  *
@@ -1229,8 +1229,8 @@ int GaAltTick(GaTickStyle *ticks, int xIsLog, int yIsLog,
   }
 
   if (ticks->vert.flags & TICK_ANY) {
-    altticks= (ticks->horiz.flags & ALT_TICK)? ytick : 0;
-    altlabel= (ticks->horiz.flags & ALT_LABEL)? ylabel : 0;
+    altticks= (ticks->vert.flags & ALT_TICK)? ytick : 0;
+    altlabel= (ticks->vert.flags & ALT_LABEL)? ylabel : 0;
     FindTicks(wymin, wymax, &ticks->vert, yIsLog);
 
     if (ticks->vert.flags & TICK_C) {
