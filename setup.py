@@ -44,7 +44,7 @@
 #
 #  ---------------------------------------------------------------------
 
-__revision__ = "$Id: setup.py,v 1.6 2010/07/30 21:06:19 dave Exp $"
+__revision__ = "$Id: setup.py,v 1.7 2011/08/22 17:48:00 grote Exp $"
 
 import os
 import os.path
@@ -180,7 +180,11 @@ int main(int argc, char *argv[])
                         print "WARNING - libm broken? see play/unix/README.fpu"
                         print "  if on Alpha Linux, rerun ./configure with CC='gcc -mieee'"
             else:
-                raise "math library missing; rerun setup.py after setting the MATHLIB env variable"
+                if (os.uname()[0] == 'Darwin' and
+                    int(os.uname()[2].split('.')[0]) == 11):
+                    raise Exception("math library may be missing; also, check the permissions of /usr/local - it needs to be world readable. After fixing the permissions, rerun setup.py")
+                else:
+                    raise Exception("math library missing; rerun setup.py after setting the MATHLIB env variable")
         else:
             self.mathlib=os.environ['MATHLIB']
         self.configfile.write('MATHLIB=-l'+self.mathlib+'\n')
