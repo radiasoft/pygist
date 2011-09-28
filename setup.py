@@ -44,7 +44,7 @@
 #
 #  ---------------------------------------------------------------------
 
-__revision__ = "$Id: setup.py,v 1.8 2011/09/28 22:47:17 grote Exp $"
+__revision__ = "$Id: setup.py,v 1.9 2011/09/28 22:50:28 grote Exp $"
 
 import os
 import os.path
@@ -92,7 +92,7 @@ if sys.platform == 'darwin':
         if archtype in ['Power Macintosh','ppc']:
             MACHTYPE = 'ppc'
             os.environ['ARCHFLAGS'] = '-arch ppc'
-        elif archtype == 'i386':
+        elif archtype in ['i386','x86_64']:
             MACHTYPE = 'i386'
             kernel_major = eval(os.uname()[2].split('.')[0])
             if kernel_major < 10 :
