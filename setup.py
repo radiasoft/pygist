@@ -44,7 +44,7 @@
 #
 #  ---------------------------------------------------------------------
 
-__revision__ = "$Id: setup.py,v 1.7 2011/08/22 17:48:00 grote Exp $"
+__revision__ = "$Id: setup.py,v 1.8 2011/09/28 22:47:17 grote Exp $"
 
 import os
 import os.path
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
         else:
             print "libm does not contain exp10, will emulate"
             self.configfile.write("NO_EXP10=-DNO_EXP10\n")
-        if sys.platform == 'darwin' and MACHTYPE == 'i386':
+        if sys.platform == 'darwin' and MACHTYPE in ['i386','x86_64']:
             # there is probably a better way to do this, but here goes...
             self.configfile.write("RANLIB=ranlib\n")
 #----------------------------------------------------------------------
