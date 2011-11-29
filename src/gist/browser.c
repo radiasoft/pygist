@@ -164,6 +164,13 @@ on_launch(int argc, char *argv[])
         gx75height = gx100height = h;
       } else if (strcmp(arg, "75")==0) defaultDPI= 75;
       else if (strcmp(arg, "100")==0) defaultDPI= 100;
+      else if (strcmp(arg, "dpi")==0) {
+        i++;
+        if (i>=argc) return MessageAndExit("Missing dpi number");
+        defaultDPI = atoi(argv[i]);
+        if (defaultDPI < 25) defaultDPI = 25;
+        if (defaultDPI > 300) defaultDPI = 300;
+      }
       else if (strcmp(arg, "gks")==0) {
         gx75width= gx75height= 600;     /* 8x8 X window size */
         gx100width= gx100height= 800;   /* 8x8 X window size */
