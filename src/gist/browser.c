@@ -311,6 +311,7 @@ static int HelpAndExit(void)
   p_stderr("             -display host:n.m  (connect to X server)\n");
   p_stderr("             -75  (default to 75 dpi)\n");
   p_stderr("             -100 (default to 100 dpi)\n");
+  p_stderr("             -dpi dpi (dpi in the range 25 to 300)\n");
   p_stderr("             -gks (default to 8x8 inches)\n");
   p_stderr("             -geometry WxH (initial window size in pixels)\n");
   p_stderr("             -nd  (not even default X server)\n");
@@ -775,7 +776,7 @@ static int MakeX(int help)
     p_stderr("  Connects to the specified X server.\n");
     p_stderr("  Subsequent draw commands will write to server,\n");
     p_stderr("  unless the draw to list is modified (see draw).\n");
-    p_stderr("  If specified, 40<=dpi<=200 (default 100).\n");
+    p_stderr("  If specified, 25<=dpi<=300 (default 100).\n");
     return 0;
   }
 
@@ -793,9 +794,9 @@ static int MakeX(int help)
       p_stderr("gist: (SYNTAX) dpi unintelligble in display command\n");
       return 0;
     }
-    if (dpi<40 && dpi>200) {
+    if (dpi<25 && dpi>300) {
       p_stderr(
-        "gist: (SYNTAX) dpi not between 40 and 200 in display command\n");
+        "gist: (SYNTAX) dpi not between 25 and 300 in display command\n");
       return 0;
     }
     if (CheckEOL("display")) return 0;
