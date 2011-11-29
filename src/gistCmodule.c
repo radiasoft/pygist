@@ -773,7 +773,7 @@ static int maxColors = 200; /* maximum number of colors for GpReadPalette */
 static int hcpDump= 1;      /* whiners can't figure out how to dump colors */
 static int hcpPSdefault = 1;  /* default now .ps instead of .cgm */
 static int hcpOnFMA = 0;
-static int defaultDPI = 75;
+static int defaultDPI = 100;
 static int defaultLegends= 1;
 static char *defaultStyle = 0;
 static char *defaultPalette = 0;
@@ -7580,7 +7580,7 @@ static PyObject *viewport (PyObject * self, PyObject * args)
 /*  window */
 
 static char window__doc__[] =
-"window( [n] [, display = `host:server.screen', dpi=100/75, wait=0/1,\n"
+"window( [n] [, display = `host:server.screen', dpi=100, wait=0/1,\n"
 "                       private=0/1, hcp=`hcp_filename', dump=0/1,\n"
 "                       legends=1/0, style=`style_sheet_filename' ] )\n"
 "     select window N as the current graphics output window.  N may\n"
@@ -7588,8 +7588,9 @@ static char window__doc__[] =
 "     an X window, and optionally has its own associated hardcopy file.\n"
 "     If N is omitted, it defaults to the current coordinate system.\n"
 "\n"
-"     The X window will appear on your default display at 75 dpi, unless\n"
-"     you specify the display and/or dpi keywords.  A dpi=100 X window\n"
+"     The X window will appear on your default display at 100 dpi, unless\n"
+"     you specify the display and/or dpi keywords. The dpi can be any\n"
+"     integer between 25 and 300. A dpi=100 X window\n"
 "     is larger than a dpi=75 X window; both represent the same thing\n"
 "     on paper.  Use display=`' to create a graphics window which has\n"
 "     no associated X window (you should do this if you want to make\n"
