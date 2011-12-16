@@ -1192,6 +1192,7 @@ static void HandleOther(Engine *engine, int k, int md)
   else if (k=='B') {if (xPrefix==0) xPrefix=1; xPrefix*=xFrameStep; go= 2;}
   else if (k=='g' || k=='\r') go= 3;
   else if (k=='G') {xPrefix=100000; go= 3;}
+  else if (k=='r') {xPrefix=0;go= 7;}
   else if (k=='s' || k=='S' || (k=='=' && (md&P_KEYPAD))) go= 4;
   else if (k=='q' || k=='Q') go= 5;
   else if (k=='n') go= 6;
@@ -1202,6 +1203,8 @@ static void HandleOther(Engine *engine, int k, int md)
     if (go<4) {
       if (xPrefix==0) xPrefix= 1;
       DoSpecial(xPrefix, cSuffices[go-1]);
+    } else if (go==7) {
+      DoSpecial(xPrefix, cSuffices[0]);
     } else if (go==4) {
       int i, n= 0;
       for (i=0 ; i<8 ; i++) {
