@@ -532,6 +532,7 @@ static int Help(int help)
     p_stderr("     nB   - backward n*step size pages and draw (default 10)\n");
     p_stderr("     ng   - go to page n and draw (default 1)\n");
     p_stderr("     G    - go to last frame\n");
+    p_stderr("     r    - redraw current frame\n");
     p_stderr("     s    - send current page\n");
     p_stderr("     q    - quit\n");
 
@@ -1107,6 +1108,8 @@ static int Special(int help)
       p_stderr("  Backward n*step size (default 10) pages, then draw\n");
     else if (cSuffix=='n')
       p_stderr("  Set the step size (default 10)\n");
+    else if (cSuffix=='r')
+      p_stderr("  Redraw the current frame\n");
     else if (cSuffix=='G')
       p_stderr("  Go to the last frame, then draw\n");
     else
