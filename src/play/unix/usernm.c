@@ -18,6 +18,8 @@
 #include <unistd.h>
 #include <pwd.h>
 
+char *dummyuser = "user";
+
 char *
 p_getuser(void)
 {
@@ -25,6 +27,7 @@ p_getuser(void)
   if (!user) {
     struct passwd *pw = getpwuid(getuid());  /* see also pathnm.c */
     if (pw) user = pw->pw_name;
+    else user = dummyuser;
   }
   return user;
 }
