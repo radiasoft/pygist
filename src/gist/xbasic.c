@@ -1322,12 +1322,14 @@ g_disconnect(p_scr *s)
   if (s) {
     int i;
     char *name;
-    for (i=0 ; i<n_screens ; i++) {
-      if (g_screens[i].s == s) {
-        name = g_screens[i].name;
-        g_screens[i].name = 0;
-        g_screens[i].s = 0;
-        p_free(name);
+    if (g_screens) {
+      for (i=0 ; i<n_screens ; i++) {
+        if (g_screens[i].s == s) {
+          name = g_screens[i].name;
+          g_screens[i].name = 0;
+          g_screens[i].s = 0;
+          p_free(name);
+        }
       }
     }
     p_disconnect(s);
