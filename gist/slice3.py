@@ -122,7 +122,7 @@ def mesh3 (x, y = None, z = None, ** kw) :
 
    dims = shape (x)
    if len (dims) == 1 and y != None and len (x) == len (y) \
-      and z != None and len(x) == len (z) and kw.has_key ("verts") :
+      and z != None and len(x) == len (z) and "verts" in kw :
       virtuals = [xyz3_irreg, getv3_irreg,
                   getc3_irreg, iterator3_irreg]
       dims = kw ["verts"]
@@ -136,7 +136,7 @@ def mesh3 (x, y = None, z = None, ** kw) :
          for i in range (1, len (sizes)) :
             totals.append (totals [i - 1] + sizes [i]) #total cells so far
          m3 = [virtuals, [dims, array ( [x, y, z]), sizes, totals], []]
-      if kw.has_key ("funcs") :
+      if "funcs" in kw :
          funcs = kw ["funcs"]
       else :
          funcs = []
@@ -174,7 +174,7 @@ def mesh3 (x, y = None, z = None, ** kw) :
       xyz = array ( [x, y, z])
    dim_cell = (dims [0] - 1, dims [1] - 1, dims [2] - 1)
    m3 = [virtuals, [dim_cell, xyz], []]
-   if kw.has_key ("funcs") :
+   if "funcs" in kw :
       funcs = kw ["funcs"]
    else :
       funcs = []
@@ -305,13 +305,13 @@ def slice3 (m3, fslice, nverts, xyzverts, * args, ** kw) :
 
    iso_index = None
    if type (fslice) != FunctionType :
-      if not kw.has_key ("value") and not is_scalar (fslice) and \
+      if "value" not in kw and not is_scalar (fslice) and \
          len (shape (fslice)) == 1 and len (fslice) == 4 :
          normal = fslice [0:3]
          projection = fslice [3]
          fslice = _plane_slicer
       elif is_scalar (fslice) and type (fslice) == IntType :
-         if not kw.has_key ("value") :
+         if "value" not in kw :
             raise _Slice3Error, \
                "value= keyword required when FSLICE is mesh variable"
          _value = kw ["value"]
@@ -321,10 +321,7 @@ def slice3 (m3, fslice, nverts, xyzverts, * args, ** kw) :
          raise _Slice3Error, \
             "illegal form of FSLICE argument, try help,slice3"
 
-   if kw.has_key ("node") :
-      node = kw ["node"]
-   else :
-      node = 0
+   node = kw.get("node",0)
 
    # will need cell list if fcolor function to be computed
    need_clist = len (args) > 0
@@ -817,10 +814,7 @@ def slice3mesh (xyz, * args, ** kw) :
    """
 
    two_d = 0
-   if kw.has_key ("smooth") :
-      smooth = kw ["smooth"]
-   else :
-      smooth = 0
+   smooth = kw.get("smooth",0)
    if len (args) == 0 :
       # Only the z argument is present
       if len (shape (xyz)) != 2 :
@@ -873,10 +867,7 @@ def slice3mesh (xyz, * args, ** kw) :
    ncxx = arange (ncx - 1, typecode = Int) * (ncy)
    ncyy = arange (ncy - 1, typecode = Int)
 
-   if kw.has_key ("color") :
-      color = kw ["color"]
-   else :
-      color = None
+   color = kw.get("color",None)
    if color != None :
 #     col = array (len (nverts), Float )
       if shape (color) == (ncx - 1, ncy - 1) :

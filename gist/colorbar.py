@@ -77,8 +77,7 @@ def color_bar (minz, maxz, split = 0, ncol = None) :
       scales.append ( "% .5g" % levs [i])
    ys = ymin + (ymax - ymin) * (levs - minz) / (maxz - minz)
    llev = len (levs)
-   rllev = range (llev)
-   for i in rllev :
+   for i in xrange (llev):
       plt (scales [i], .625, ys [i])   # labels
    xmin = zeros (llev, Float)
    xmax = zeros (llev, Float)

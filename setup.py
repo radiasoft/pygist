@@ -59,6 +59,11 @@ try:
 except:
     pass
 
+try:
+    from distutils.command.build_py import build_py_2to3 as build_py
+except ImportError:
+    from distutils.command.build_py import build_py
+
 pygist_name = "pygist"
 pygist_version = "1.6.1"
 pygist_maintainer = "Dave Grote"
@@ -75,7 +80,7 @@ macosx = 0
 
 if sys.platform == 'darwin':
     # --- Machines running csh/tcsh seem to have MACHTYPE defined and this is the safest way to set -arch.
-    if os.environ.has_key('MACHTYPE'):
+    if 'MACHTYPE' in os.environ:
         MACHTYPE = os.environ['MACHTYPE']
         if os.environ['MACHTYPE'] == 'i386':
             os.environ['ARCHFLAGS'] = '-arch i386'
@@ -155,10 +160,10 @@ class config_pygist (config):
         if not windows: self.config_unix()
         if x11: self.config_x11()
         self.configfile.close()
-        print 'wrote src/Make.cfg'
+        print('wrote src/Make.cfg')
 #----------------------------------------------------------------------
     def config_toplevel(self):
-        print "  ============= begin top level configuration ============="
+        print("  ============= begin top level configuration =============")
 
         # check alternate libm for Alpha Linux (see play/unix/README.fpu)
         if not 'MATHLIB' in os.environ:
@@ -175,10 +180,10 @@ int main(int argc, char *argv[])
                 if not self.try_run(testcode,libraries=[self.mathlib]):
                     if self.try_link(testcode, libraries=['cpml']):
                         self.mathlib="cpml"
-                        print "WARNING - using -lcpml instead of -lm"
+                        print("WARNING - using -lcpml instead of -lm")
                     else:
-                        print "WARNING - libm broken? see play/unix/README.fpu"
-                        print "  if on Alpha Linux, rerun ./configure with CC='gcc -mieee'"
+                        print("WARNING - libm broken? see play/unix/README.fpu")
+                        print("  if on Alpha Linux, rerun ./configure with CC='gcc -mieee'")
             else:
                 if (os.uname()[0] == 'Darwin' and
                     int(os.uname()[2].split('.')[0]) == 11):
@@ -197,10 +202,10 @@ int main(int argc, char *argv[])
 }
 """
         if self.try_link(testcode,libraries=[self.mathlib]):
-            print "using exp10 found in libm"
+            print("using exp10 found in libm")
             self.configfile.write("NO_EXP10=\n")
         else:
-            print "libm does not contain exp10, will emulate"
+            print("libm does not contain exp10, will emulate")
             self.configfile.write("NO_EXP10=-DNO_EXP10\n")
         if sys.platform == 'darwin' and MACHTYPE in ['i386','x86_64']:
             # there is probably a better way to do this, but here goes...
@@ -208,9 +213,9 @@ int main(int argc, char *argv[])
 #----------------------------------------------------------------------
     def config_unix(self):
         # begin play/unix configuration
-        print
-        print "  ============= begin play/unix configuration ============="
-        print
+        print()
+        print("  ============= begin play/unix configuration =============")
+        print()
         os.chdir(os.path.join('src','play','unix'))
         configfile = open('config.h','w')
         configfile.write('/* config.h used during config.sh script */\n')
@@ -237,16 +242,16 @@ int main(int argc, char *argv[])
         self.find_poll(configfile)
 
         if self.fatality:
-            print "*** at least one play/unix component could not be configured"
-            print "*** see configuration notes in play/unix/README.cfg"
+            print("*** at least one play/unix component could not be configured")
+            print("*** see configuration notes in play/unix/README.cfg")
         else:
             configfile.close()
             os.rename("config.0h","config.h")
-            print "wrote src/play/unix/config.h"
+            print("wrote src/play/unix/config.h")
 
         os.chdir(os.path.join('..','..','..'))
-        print
-        print "  ============== end play/unix configuration =============="
+        print()
+        print("  ============== end play/unix configuration ==============")
         
     def find_time(self,configfile):
         # find CPU time function (getrusage is best if present)
@@ -263,15 +268,15 @@ main(int argc, char *argv[])
 }
 """
         if self.try_link("#define USE_GETRUSAGE\n"+testcode,include_dirs=[".."]):
-            print "using getrusage() (CPU timer)"
+            print("using getrusage() (CPU timer)")
             configfile.write('#define USE_GETRUSAGE\n')
         elif self.try_link("#define USE_TIMES\n"+testcode,include_dirs=[".."]):
-            print "using times() (CPU timer)"
+            print("using times() (CPU timer)")
             configfile.write('#define USE_TIMES\n')
         elif self.try_link(testcode,include_dirs=[".."]):
-            print "fallback to clock(), getrusage() and times() missing (CPU timer)"
+            print("fallback to clock(), getrusage() and times() missing (CPU timer)")
         else:
-            print "FATAL getrusage(), times(), and clock() all missing (timeu.c)"
+            print("FATAL getrusage(), times(), and clock() all missing (timeu.c)")
             self.fatality = 1
 
     def find_wall_time(self,configfile):
@@ -288,12 +293,12 @@ main(int argc, char *argv[])
 }
 """
         if self.try_link("#define USE_GETTIMEOFDAY\n"+testcode,include_dirs=[".."]):
-            print "using gettimeofday() (wall timer)"
+            print("using gettimeofday() (wall timer)")
             configfile.write('#define USE_GETTIMEOFDAY\n')
         elif self.try_link(testcode,include_dirs=[".."]):
-            print "fallback to time()+difftime(), gettimeofday() missing (wall timer)"
+            print("fallback to time()+difftime(), gettimeofday() missing (wall timer)")
         else:
-            print "FATAL gettimeofday(), and time() or difftime() missing (timew.c)"
+            print("FATAL gettimeofday(), and time() or difftime() missing (timew.c)")
             self.fatality = 1
 
     def find_sigfpe(self,configfile):
@@ -302,7 +307,7 @@ main(int argc, char *argv[])
 #----------------------------------------------------------------------
         if sys.platform=='cygwin':
             # No SIGFPE delivery on Windows.
-            print 'hardwiring #define FPU_IGNORE'
+            print('hardwiring #define FPU_IGNORE')
             configfile.write('#define FPU_IGNORE\n')
             return
 
@@ -320,97 +325,97 @@ main(int argc, char *argv[])
         fpelib=""
         fpelibm=""
         if self.try_link("#define FPU_DIGITAL\n"+testcode):
-            print "using FPU_DIGITAL (SIGFPE delivery)"
+            print("using FPU_DIGITAL (SIGFPE delivery)")
             configfile.write('#define FPU_DIGITAL\n')
             fpedef = "-DFPU_DIGITAL"
         elif self.try_link("#define FPU_AIX\n"+testcode):
-            print "using FPU_AIX (SIGFPE delivery)"
+            print("using FPU_AIX (SIGFPE delivery)")
             configfile.write('#define FPU_AIX\n')
             fpedef = "-DFPU_AIX"
         elif self.try_link("#define FPU_HPUX\n"+testcode):
-            print "using FPU_HPUX (SIGFPE delivery)"
+            print("using FPU_HPUX (SIGFPE delivery)")
             configfile.write('#define FPU_HPUX\n')
             fpedef = "-DFPU_HPUX"
             fpelibm = self.mathlib
         elif self.try_link("#define FPU_SOLARIS\n"+testcode):
-            print "using FPU_SOLARIS (SIGFPE delivery)"
+            print("using FPU_SOLARIS (SIGFPE delivery)")
             configfile.write('#define FPU_SOLARIS\n')
             fpedef="-DFPU_SOLARIS"
             # note this works under IRIX 6.3, while FPU_IRIX does not??
         elif self.try_link("#define FPU_SUN4\n"+testcode,libraries=[self.mathlib]):
-            print "using FPU_SUN4 (-lm) (SIGFPE delivery)"
+            print("using FPU_SUN4 (-lm) (SIGFPE delivery)")
             configfile.write('#define FPU_SUN4\n')
             fpedef="-DFPU_SUN4"
             fpelibm=self.mathlib
         elif self.try_link("#define FPU_SUN4\n"+testcode,libraries=["sunmath"]):
-            print "using FPU_SUN4 (-lsunmath) (SIGFPE delivery)"
+            print("using FPU_SUN4 (-lsunmath) (SIGFPE delivery)")
             configfile.write('#define FPU_SUN4\n')
             fpedef="-DFPU_SUN4"
             fpelib="sunmath"
         elif self.try_link("#define FPU_IRIX\n"+testcode,libraries=["fpe"]):
             # FPU_SOLARIS seems to work better??
-            print "using FPU_IRIX (SIGFPE delivery)"
+            print("using FPU_IRIX (SIGFPE delivery)")
             configfile.write('#define FPU_IRIX\n')
             fpedef="-DFPU_IRIX"
             fpelib="fpe"
         elif self.try_link("#define FPU_IRIX\n"+testcode):
-            print "using FPU_IRIX (SIGFPE delivery), but no libfpe??"
+            print("using FPU_IRIX (SIGFPE delivery), but no libfpe??")
             configfile.write('#define FPU_IRIX\n')
             fpedef="-DFPU_IRIX"
         elif self.try_link("#define FPU_MACOSX_PPC\n"+testcode):
-            print "using FPU_MACOSX_PPC (SIGFPE delivery)"
+            print("using FPU_MACOSX_PPC (SIGFPE delivery)")
             configfile.write('#define FPU_MACOSX_PPC\n')
             fpedef="-DFPU_MACOSX_PPC"
         elif self.try_link("#define FPU_MACOSX_INTEL\n"+testcode):
-            print "using FPU_MACOSX_INTEL (SIGFPE delivery)"
+            print("using FPU_MACOSX_INTEL (SIGFPE delivery)")
             configfile.write('#define FPU_MACOSX_INTEL\n')
             fpedef="-DFPU_MACOSX_INTEL"
         elif self.try_compile("#define TEST_GCC\n"+testgcc):
             if self.try_link("#define FPU_ALPHA_LINUX\n" + testcode):
-                print "using FPU_ALPHA_LINUX (SIGFPE delivery)"
+                print("using FPU_ALPHA_LINUX (SIGFPE delivery)")
                 configfile.write('#define FPU_ALPHA_LINUX\n')
                 fpedef="-DFPU_ALPHA_LINUX"
-                print "...libm may be broken -- read play/unix/README.fpu for more"
-                print "...fputest failure may not mean that pygist itself is broken"
+                print("...libm may be broken -- read play/unix/README.fpu for more")
+                print("...fputest failure may not mean that pygist itself is broken")
                 # CC="$CC -mfp-trap-mode=su -mtrap-precision=i"
             elif self.try_link("#define FPU_GCC_I86\n" + testcode):
-                print "using FPU_GCC_I86 (SIGFPE delivery)"
+                print("using FPU_GCC_I86 (SIGFPE delivery)")
                 configfile.write('#define FPU_GCC_I86\n')
                 fpedef="-DFPU_GCC_I86"
             elif self.try_link("#define FPU_GCC_SPARC\n" + testcode):
-                print "using FPU_GCC_SPARC (SIGFPE delivery)"
+                print("using FPU_GCC_SPARC (SIGFPE delivery)")
                 configfile.write('#define FPU_GCC_SPARC\n')
                 fpedef="-DFPU_GCC_SPARC"
             elif self.try_link("#define FPU_GCC_M86K\n" + testcode):
-                print "using FPU_GCC_M68K (SIGFPE delivery)"
+                print("using FPU_GCC_M68K (SIGFPE delivery)")
                 configfile.write('#define FPU_GCC_M68K\n')
                 fpedef="-DFPU_GCC_M68K"
             elif self.try_link("#define FPU_GCC_POWERPC\n" + testcode):
-                print "using FPU_GCC_POWERPC (SIGFPE delivery)"
+                print("using FPU_GCC_POWERPC (SIGFPE delivery)")
                 configfile.write('#define FPU_GCC_POWERPC\n')
                 fpedef="-DFPU_GCC_POWERPC"
             elif self.try_link("#define FPU_GCC_ARM\n" + testcode):
-                print "using FPU_GCC_ARM (SIGFPE delivery)"
+                print("using FPU_GCC_ARM (SIGFPE delivery)")
                 configfile.write('#define FPU_GCC_ARM\n')
                 fpedef="-DFPU_GCC_ARM"
         elif self.try_link("#define FPU_GNU_FENV \n" + testcode, libraries=[self.mathlib]):
-            print "using FPU_GNU_FENV (SIGFPE delivery)"
+            print("using FPU_GNU_FENV (SIGFPE delivery)")
             configfile.write('#define FPU_GNU_FENV\n')
             fpedef="-DFPU_GNU_FENV"
             fpelibm=self.mathlib
         elif self.try_link("#define FPU_UNICOS\n" + testcode, libraries=[self.mathlib]):
-            print "using FPU_UNICOS (SIGFPE delivery)"
+            print("using FPU_UNICOS (SIGFPE delivery)")
             self.configfile.write('#define FPU_UNICOS\n')
             fpedef="-DFPU_UNICOS"
             fpelibm=self.mathlib
 
         if "fpedef" in os.environ:
             if self.try_link("#define FPU_IGNORE\n" + testcode, libraries=[self.mathlib]):
-                print "using FPU_IGNORE (SIGFPE delivery)"
+                print("using FPU_IGNORE (SIGFPE delivery)")
                 configfile.write('#define FPU_IGNORE\n')
                 fpedef="-DFPU_IGNORE"
             else:
-                print "FATAL unable to build SIGFPE fputest? (fputest.c, fpuset.c)"
+                print("FATAL unable to build SIGFPE fputest? (fputest.c, fpuset.c)")
                 self.fatality=1
 
         if fpelib:
@@ -431,12 +436,12 @@ main(int argc, char *argv[])
             if fpelib: libraries.append(fpelib)
             if fpelibm: libraries.append(fpelibm)
             if not self.try_run(testcode,libraries=libraries):
-                print
-                print "*************************WARNING***************************"
-                print "*** play/unix configuration failed to get SIGFPE delivered"
-                print "*** read the notes in play/unix/README.fpu"
-                print "*************************WARNING***************************"
-                print
+                print()
+                print("*************************WARNING***************************")
+                print("*** play/unix configuration failed to get SIGFPE delivered")
+                print("*** read the notes in play/unix/README.fpu")
+                print("*************************WARNING***************************")
+                print()
 
     def find_user_name(self,configfile):
         # find function to get user name
@@ -454,12 +459,12 @@ main(int argc, char *argv[])
 }
 """
         if self.try_link(testcode,include_dirs=[".."]):
-            print "using POSIX getlogin(), getpwuid(), getuid() functions"
+            print("using POSIX getlogin(), getpwuid(), getuid() functions")
         elif self.try_link("#define USE_PASSWD\n"+testcode,include_dirs=[".."]):
-            print "fallback to cuserid(), POSIX getlogin() family missing"
+            print("fallback to cuserid(), POSIX getlogin() family missing")
             configfile.write('#define NO_PASSWD\n')
         else:
-            print "FATAL cuserid(), POSIX getlogin() family both missing (usernm.c)"
+            print("FATAL cuserid(), POSIX getlogin() family both missing (usernm.c)")
             self.fatality = 1
 
     def find_tiocgpgrp(self, configfile):
@@ -479,20 +484,20 @@ main(int argc, char *argv[])
         if self.try_compile(testcode,include_dirs=[".."]):
             pass
         elif self.try_compile("#define USE_POSIX_GETPGRP\n"+testcode,include_dirs=[".."]):
-            print "using strict POSIX getpgrp prototype"
+            print("using strict POSIX getpgrp prototype")
             testcode = "#define USE_POSIX_GETPGRP\n" + testcode
             configfile.write('#define USE_POSIX_GETPGRP\n')
         if self.try_link(testcode,include_dirs=[".."]):
-            print "using POSIX tcgetpgrp() function"
+            print("using POSIX tcgetpgrp() function")
         elif self.try_link('#define USE_TIOCGPGRP_IOCTL=<sys/termios.h>\n'+testcode,include_dirs=[".."]):
-            print "fallback to TIOCGPGRP in sys/termios.h, POSIX tcgetpgrp() missing"
+            print("fallback to TIOCGPGRP in sys/termios.h, POSIX tcgetpgrp() missing")
             configfile.write('#define USE_TIOCGPGRP_IOCTL <sys/termios.h>\n')
         elif self.try_link('#define USE_TIOCGPGRP_IOCTL=<sgtty.h>\n'+testcode,include_dirs=[".."]):
-            print "fallback to TIOCGPGRP in sgtty.h, POSIX tcgetpgrp() missing"
+            print("fallback to TIOCGPGRP in sgtty.h, POSIX tcgetpgrp() missing")
             configfile.write('#define USE_TIOCGPGRP_IOCTL <sgtty.h>\n')
         else:
-            print "FATAL unable to find TIOCGPGRP ioctl header (uinbg.c)"
-            print "  (you can patch config.0h by hand if you know header)"
+            print("FATAL unable to find TIOCGPGRP ioctl header (uinbg.c)")
+            print("  (you can patch config.0h by hand if you know header)")
             configfile.write('#define USE_TIOCGPGRP_IOCTL <???>\n')
             self.fatality = 1
 
@@ -516,12 +521,12 @@ main(int argc, char *argv[])
 }
 """
         if self.try_link(testcode):
-            print "using POSIX getcwd() function"
+            print("using POSIX getcwd() function")
         elif self.try_link("#define USE_GETWD\n"+testcode):
-            print "fallback to getwd(), POSIX getcwd() missing"
+            print("fallback to getwd(), POSIX getcwd() missing")
             configfile.write('#define USE_GETWD\n')
         else:
-            print "FATAL getcwd(), getwd() both missing (dir.c)"
+            print("FATAL getcwd(), getwd() both missing (dir.c)")
             self.fatality=1
 
     def find_dirent(self, configfile):
@@ -543,18 +548,18 @@ main(int argc, char *argv[])
 }
 """
         if self.try_link(testcode,include_dirs=[".."]):
-            print "using POSIX dirent.h header for directory ops"
+            print("using POSIX dirent.h header for directory ops")
         elif self.try_link('#define DIRENT_HEADER=<sys/dir.h>\n'+testcode,include_dirs=[".."]):
-            print "using sys/dir.h header for directory ops"
+            print("using sys/dir.h header for directory ops")
             configfile.write('#define DIRENT_HEADER <sys/dir.h>\n')
         elif self.try_link('#define DIRENT_HEADER=<sys/ndir.h>\n'+testcode,include_dirs=[".."]):
-            print "using sys/ndir.h header for directory ops"
+            print("using sys/ndir.h header for directory ops")
             configfile.write('#define DIRENT_HEADER <sys/ndir.h>')
         elif self.try_link('#define DIRENT_HEADER=<ndir.h>\n'+testcode,include_dirs=[".."]):
-            print "using ndir.h header for directory ops"
+            print("using ndir.h header for directory ops")
             configfile.write('#define DIRENT_HEADER <ndir.h>')
         else:
-            print "FATAL dirent.h, sys/dir.h, sys/ndir.h, ndir.h all missing (dir.c)"
+            print("FATAL dirent.h, sys/dir.h, sys/ndir.h, ndir.h all missing (dir.c)")
             self.fatality=1
 
     def find_poll(self,configfile):
@@ -573,39 +578,38 @@ main(int argc, char *argv[])
 }
 """
         if self.try_link('#define USE_SELECT\n'+'#define HAVE_SYS_SELECT_H\n'+testcode,include_dirs=[".."]):
-            print "using select(), sys/select.h header"
+            print("using select(), sys/select.h header")
             configfile.write('#define USE_SELECT\n')
             configfile.write('#define HAVE_SYS_SELECT_H\n')
         elif self.try_link('#define USE_SELECT\n'+'#define NEED_SELECT_PROTO\n'+testcode,include_dirs=[".."]):
-            print "using select(), sys/time.h, sys/types.h headers"
+            print("using select(), sys/time.h, sys/types.h headers")
             configfile.write('#define USE_SELECT\n')
             configfile.write('#define NEED_SELECT_PROTO\n')
         elif self.try_link('#define USE_SELECT\n'+'#define NO_SYS_TIME_H\n'+'#define NEED_SELECT_PROTO\n'+testcode,include_dirs=[".."]):
-            print "using select(), time.h, sys/types.h headers"
+            print("using select(), time.h, sys/types.h headers")
             configfile.write('#define USE_SELECT\n')
             configfile.write('#define NO_SYS_TIME_H\n')
             configfile.write('#define NEED_SELECT_PROTO\n')
         elif  self.try_link('#define USE_SELECT\n'+testcode,include_dirs=[".."]):
-            print "using select(), sys/time.h header"
+            print("using select(), sys/time.h header")
             configfile.write('#define USE_SELECT')
         elif  self.try_link('#define USE_SELECT\n'+'#define NO_SYS_TIME_H\n'+testcode,include_dirs=[".."]):
-            print "using select(), time.h header"
+            print("using select(), time.h header")
             configfile.write('#define USE_SELECT\n')
             configfile.write('#define NO_SYS_TIME_H\n')
         elif self.try_link(testcode,include_dirs=[".."]):
-            print "using poll(), poll.h header"
+            print("using poll(), poll.h header")
         elif self.try_link('#define USE_SYS_POLL_H\n'+testcode,include_dirs=[".."]):
-            print "using poll(), sys/poll.h header"
+            print("using poll(), sys/poll.h header")
             configfile.write('#define USE_SYS_POLL_H\n')
         else:
-            print "FATAL neither poll() nor select() usable? (uevent.c, upoll.c)"
+            print("FATAL neither poll() nor select() usable? (uevent.c, upoll.c)")
             self.fatality=1
 #----------------------------------------------------------------------
     def config_x11(self):
-        print
-        print "  ============= begin play/x11 configuration =============="
-        print
-        from string import replace
+        print()
+        print("  ============= begin play/x11 configuration ==============")
+        print()
         self.fatality=0
 
         # figure out directories to compile and load with X11
@@ -676,10 +680,10 @@ int main(int argc, char *argv[])
                     if self.try_compile(testcode,include_dirs=[d]):
                         xfound = 1
                         xinc = d
-                        xlib = replace(d,"include",libpath)
+                        xlib = d.replace("include",libpath)
                         break
         if not xfound:
-            print "FATAL unable to find X11 includes (play/x11) $xinc"
+            print("FATAL unable to find X11 includes (play/x11) $xinc")
             self.fatality=1
         else:
             if self.try_link(testcode,include_dirs=[xinc],libraries=['X11']):
@@ -688,38 +692,38 @@ int main(int argc, char *argv[])
             elif xlib and self.try_link(testcode,include_dirs=[xinc],library_dirs=[xlib],libraries=['X11']):
                 xfound=2
             else:
-                xlist = [replace(directory,'include',libpath) for directory in xlist]
-		if xinc:
+                xlist = [directory.replace('include',libpath) for directory in xlist]
+                if xinc:
                     for d in xlist:
                         if self.try_link(testcode,include_dirs=[xinc],library_dirs=[d],libraries=['X11']):
                             xlib = d
                             xfound=2
                             break
-		else:
+                else:
                     for d in xlist:
                         if self.try_link(testcode,library_dirs=[d],libraries=['X11']):
                             xlib = d
                             xfound=2
                             break
         if xfound:
-            print "found X Window System, X11 headers and libraries"
-	    if xinc:
-            	print "  - using X11 header switch -I"+xinc
-	    else:
-            	print "  - using X11 header switch [none]"
-            print "  - using X11 loader switch -L"+xlib
+            print("found X Window System, X11 headers and libraries")
+            if xinc:
+                    print("  - using X11 header switch -I"+xinc)
+            else:
+                    print("  - using X11 header switch [none]")
+            print("  - using X11 loader switch -L"+xlib)
         else:
-            print "FATAL unable to find X11 libraries (play/x11) $xlib"
+            print("FATAL unable to find X11 libraries (play/x11) $xlib")
             self.fatality=1
         if xinc:
-	    self.configfile.write("XINC=-I"+xinc+"\n")
-	else:
-	    self.configfile.write("XINC=\n")
+            self.configfile.write("XINC=-I"+xinc+"\n")
+        else:
+            self.configfile.write("XINC=\n")
         self.configfile.write("XLIB=-L"+xlib+"\n")
 
-        print "appended to ../../Make.cfg"
-        print
-        print "  ============== end play/x11 configuration ==============="
+        print("appended to ../../Make.cfg")
+        print()
+        print("  ============== end play/x11 configuration ===============")
 
 #------------------------------------------------------------------------
 # Installation
@@ -984,14 +988,14 @@ include_dirs.append(numpy.get_include())
 
 # Now we know everything needed to define the extension module
 
-print library_dirs
+print(library_dirs)
 
 extension = Extension ( 'gistC',
                         source,
                         include_dirs=include_dirs,
                         library_dirs=library_dirs,
                         libraries=libraries,
-			extra_compile_args=extra_compile_args,
+                        extra_compile_args=extra_compile_args,
                         extra_link_args=extra_link_args)
 
 # Now that we know how to build the extension, we can call setup
@@ -1004,12 +1008,13 @@ setup (
           maintainer = pygist_maintainer + "; Michiel de Hoon for the Windows version",
           maintainer_email = "mdehoon@c2b2.columbia.edu",
           url = "http://www.llnl.gov",
-          cmdclass = {'config': config_pygist},
+          cmdclass = {'config': config_pygist,
+                      'build_py':build_py},
           packages = [''],
           package_dir = {'': 'gist'},
           extra_path = 'gist',
-	  data_files = [('g',gfiles)],
-          ext_modules = [extension]
+          data_files = [('g',gfiles)],
+          ext_modules = [extension],
    )
 
 # Finished.

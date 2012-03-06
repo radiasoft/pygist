@@ -450,8 +450,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
    else :
       colors = array (colors)
       if len (colors) != n + 1 :
-         raise "PLFC_Error", \
-            "colors must specify one more color than contours."
+         raise Exception("PLFC_Error - colors must specify one more color than contours.")
       if colors.dtype.char != 'B' :
          colors = bytscl (colors)
 
@@ -530,7 +529,7 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
             for i in range(n):
                barx[i] = array([x[2*i],x[2*i],x[2*i+1],x[2*i+1]])
          else:
-            raise "plh error: inconsistent length of X"
+            raise Exception("plh error: inconsistent length of X")
    bary = [[]] * n
    for i in range(n):
       bary[i] = array([0,y[i],y[i],0])

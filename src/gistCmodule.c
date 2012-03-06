@@ -146,6 +146,16 @@ static void clearMemList (void);
 
 /* PyErr_SetString returns a void; make an object and cast it */
 
+#if PY_MAJOR_VERSION >= 3
+    #define PyString_Check PyUnicode_Check
+    #define PyString_AsString PyUnicode_AS_DATA
+    #define PyString_FromString PyUnicode_FromString
+    #define PyInt_Check PyLong_Check
+    #define PyInt_AsLong PyLong_AsLong
+    #define PyInt_FromLong PyLong_FromLong
+    #define PyNumber_Int PyNumber_Long
+#endif
+
 /* 
  *  11/06/01 LLC: 
  *  On Teracluster, compiler warns of cast to int in some uses. 
@@ -201,9 +211,12 @@ flush_std(const char *s)
 {
   /* code from Python/sysmodule.c:PySys_WriteStdout */
   PyObject *pstdout, *error_type, *error_value, *error_traceback;
+  PyObject *err;
   PyErr_Fetch(&error_type, &error_value, &error_traceback);
   pstdout = PySys_GetObject("stdout");
-  fflush(pstdout? PyFile_AsFile(pstdout) : stdout);
+  err = PyObject_CallMethod(pstdout,"flush",NULL);
+  Py_XDECREF(err);
+  /* fflush(pstdout? PyFile_AsFile(pstdout) : stdout); */
   PyErr_Restore(error_type, error_value, error_traceback);
 }
 static void
@@ -624,9 +637,6 @@ static void clearMemList (void) {
 
 /******************************E N D***********************************/
 
-/* This module's initialization routine */
-void initgistC (void);
-
 /* Routines in the Gist user interface */
 static PyObject *animate (PyObject * self, PyObject * args);
 static PyObject *bytscl (PyObject * self, PyObject * args, PyObject * kd);
@@ -684,7 +694,7 @@ static double Safe_dbl (double x);
 static double *CopyLevels(double *levels, long nLevels);
 static char *CheckDefaultWindow(void);
 static int CheckPalette (void);
-static long GetTypeface (char *s, int *f);
+static long GetTypeface (const char *s, int *f);
 static int GrabByteScale ( PyObject **kwt, char **keywrds, double *scale,
   double *offset, double *zn, double *zx, double *z, int *reg, 
     int region, long iMax, long jMax, int zCompressed);
@@ -712,7 +722,7 @@ static long setz_mesh( PyObject *args, PyObject **zop,
   char *errstr, PyObject *tri);
 static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3]);
 static long unpack_limit_tuple (PyObject * ob, double limits[], int *flags);
-static int verify_kw (char *keyword, char * kwlist[]);
+static int verify_kw (const char *keyword, char * kwlist[]);
 static long FindMeshZone(double xx, double yy, double *x, double *y, 
   int *reg, long ix, long jx);
 static long Safe_strlen(const char *s);
@@ -1308,7 +1318,6 @@ static long _slice2_part (GArrayObject * xyzc, GArrayObject * keep,
    Uchar * keepd,
          * maskd;
    int * nextd=0,
-       * nvertcd=0,
        * prevd=0,
        * list0d=0,
        * list1d=0,
@@ -1505,7 +1514,7 @@ static long _slice2_part (GArrayObject * xyzc, GArrayObject * keep,
    /* Note: allocate return values in caller's list. */
    TRY (* nvertc = SimpleHist (take (ndxs, xold, 1, FREE1, FREE1, 1), FREE1, 0),
       (long) NULL);
-   nvertcd = (int *) ( (* nvertc)->data);
+   /* nvertcd = (int *) ( (* nvertc)->data); */
 
    if (freexyzc >= 0)
       freeArray (xyzc, freexyzc);
@@ -1854,7 +1863,7 @@ static void GetPCrange (double *zmn, double *zmx, double *z, int *reg,
 }
 
 /* Used by setkw_fonttype() */
-static long GetTypeface (char *s, int *f)
+static long GetTypeface (const char *s, int *f)
 {
   int face = 0;
   while (*s) {
@@ -2541,7 +2550,8 @@ static long build_kwt (PyObject *kd, char *kwlist[], PyObject * kwt[])
   int i, n, nkw_set = 0;
   char *kw;
   PyObject *kob, *keylist;
-  char *kword, errstr[256];
+  const char *kword;
+  char errstr[256];
 
   for (i = 0; (kw = kwlist[i]); i++) kwt[i] = 0;
   if (!PyMapping_Check (kd))
@@ -2667,8 +2677,8 @@ static PyObject *debug_array (PyObject * self, PyObject * args)
  TRY (PyArg_ParseTuple (args, "O", &oarray),
     ERRSS ("debug_array: argument should be one PyObject*."));
  TO_STDOUT("Value of input pointer is %p.", oarray); flush_stdout();
- TO_STDOUT(" Reference count %d, size %d.\n", (int)oarray->ob_refcnt,
-           (int)oarray->ob_type->ob_size);
+ TO_STDOUT(" Reference count %d, size %d.\n", (int)Py_REFCNT(oarray),
+           (int)(Py_SIZE(oarray)));
  flush_stdout();
  if (! isARRAY (oarray)) {
     return ERRSS ("debug_array: argument should be a NumPy array.");
@@ -2708,7 +2718,8 @@ static char *expand_pathname (const char *name)
   DECL_ZERO (PyObject *, p2);
   DECL_ZERO (PyObject *, p3);
   DECL_ZERO (PyObject *, p4);
-  char *path, *errstr = (char *) NULL, *name2, *name3;
+  char *path, *errstr = (char *) NULL;
+  const char *name2, *name3;
 
   if (!name) return 0;
 
@@ -4516,7 +4527,7 @@ static PyObject *plf (PyObject * self, PyObject * args, PyObject * kd)
   double *z = 0;
   GpColor *zc = 0;
   GaQuadMesh mesh;
-  int convertedZ= 0;
+  /* int convertedZ= 0; */
   int rgb = 0;
 
   PyObject * kwt[NELT(plfKeys) - 1];
@@ -4602,7 +4613,7 @@ static PyObject *plf (PyObject * self, PyObject * args, PyObject * kd)
        (int) (mesh.iMax != iMax) ), (PyObject *) NULL);
     TRY (zc = PushColors(z, iMax*jMax, zmin, zmax, scale, offset),
        (PyObject *) NULL);
-    convertedZ= 1;
+    /* convertedZ= 1; */
   }
 
   GhGetFill();
@@ -5464,7 +5475,7 @@ static char plremove__doc__[] =
 
 static PyObject *plremove(PyObject * self, PyObject * args)
 {
-  int type = 0, n_element = 0,result;
+  int n_element = 0;
 
   switch (PyTuple_Size (args)) {
   case 1: /* (n_element) given */
@@ -5494,12 +5505,12 @@ static PyObject *plremove(PyObject * self, PyObject * args)
   }
   if (n_element >= 0) {
     /* retrieve specified element */
-    type = GdSetElement (n_element);
+    GdSetElement (n_element);
   }
   curElement = -1;
 
   PyFPE_START_PROTECT("plremove", return 0)
-  result = GdRemove();
+  GdRemove();
   PyFPE_END_PROTECT(dummy)
 
   Py_INCREF (Py_None);
@@ -5961,7 +5972,7 @@ static int set_limit (PyObject * ob, double *lim, int *flags, int fval)
 {
   PyObject *floatob;
   if (PyString_Check (ob)) {
-    char *s = PyString_AsString (ob);
+    const char *s = PyString_AsString (ob);
     if (*s == 'e' || *s == 'E') {
       *flags |= fval;
     } else if (*s == 'u' || *s == 'U') {
@@ -6167,7 +6178,7 @@ static long setkw_color (PyObject * v, unsigned long *t, char *kw)
   PyObject *intv;
 
   if (PyString_Check (v)) {
-    char *s = PyString_AsString (v);
+    const char *s = PyString_AsString (v);
     if (strcmp (s, "bg") == 0)
       color = P_BG;
     else if (strcmp (s, "fg") == 0)
@@ -6206,7 +6217,7 @@ static long setkw_color (PyObject * v, unsigned long *t, char *kw)
   }
 
   else if ((intv = PyNumber_Int (v)) != NULL) {
-    int color1 = PyInt_AsLong (intv);
+    long color1 = PyInt_AsLong (intv);
     Py_DECREF(intv);
     if ( color1 < 0 )  {
        color = (color1 & 0xff);  /* take right 8 bits */
@@ -6244,7 +6255,7 @@ static long setkw_fonttype (PyObject * v, int *t, char *kw)
 {
   char buf[256];
   char *format = "%s keyword requires string or integer argument";
-  char *s;
+  const char *s;
   int font, face;
 
 #undef SETFONT
@@ -6268,7 +6279,7 @@ if (GetTypeface (&s[n], &face)) font = type|face; else return 0
       return (long) ERRSS ("unrecognized font keyword");
     }
   } else if (PyInt_Check (v)) {
-    font = PyInt_AsLong (v);
+    font = (int)PyInt_AsLong (v);
   } else {
     (void)sprintf(buf, format, kw);
     return (long) ERRSS (buf);
@@ -6284,7 +6295,7 @@ static long setkw_integer (PyObject * v, int *t, char *kw)
   char *format = "%s keyword requires integer argument";
 
   if (PyInt_Check (v)) {
-    *t = PyInt_AsLong (v);
+    *t = (int)PyInt_AsLong (v);
     return 1;
   }
   (void)sprintf(buf, format, kw);
@@ -6293,7 +6304,7 @@ static long setkw_integer (PyObject * v, int *t, char *kw)
 
 static long setkw_justify (PyObject * v, int *t, char *kw)
 {
-  char *s;
+  const char *s;
   char buf[256];
   char *format = "%s keyword requires string or integer argument";
 
@@ -6336,7 +6347,7 @@ static long setkw_justify (PyObject * v, int *t, char *kw)
     }
 
   } else if (PyInt_Check (v)) {
-    int justify = PyInt_AsLong (v);
+    int justify = (int)PyInt_AsLong (v);
     gistA.t.alignH = justify & 3;
     gistA.t.alignV = justify >> 2;
 
@@ -6355,7 +6366,7 @@ static long setkw_linetype (PyObject * v, int *t, char *kw)
     "\"dashdot\", \"dashdotdot\", or 0-5, respectively.";
 
   if (PyString_Check (v)) {
-    char *s = PyString_AsString (v);
+    const char *s = PyString_AsString (v);
     if (strcmp (s, "none") == 0)
       type = L_NONE;
     else if (strcmp (s, "solid") == 0)
@@ -6371,7 +6382,7 @@ static long setkw_linetype (PyObject * v, int *t, char *kw)
     else
       return (long) ERRSS (errstr);
   } else if (PyInt_Check (v)) {
-    type = PyInt_AsLong (v);
+    type = (int)PyInt_AsLong (v);
     if (type < 0) type = 0;
     else if (type>5) type= 1 + (type-1)%5;
   } else {
@@ -6386,7 +6397,7 @@ static long setkw_string (PyObject * v, char **t, char *kw)
 {
   char buf[256];
   char *format = "%s keyword requires string argument";
-  char *tmpString;
+  const char *tmpString;
 
   /*
    *  09/04/02 llc To address the comment below on the string returned
@@ -6394,7 +6405,7 @@ static long setkw_string (PyObject * v, char **t, char *kw)
    *               Lee Taylor explained that the string returned is a 
    *               string in a string object (a PyObject), so
    *               the string object, rather than the string, was allocated. 
-   *               To be on the same side, create space and 
+   *               To be on the safe side, create space and 
    *               copy the string out of the Python string object.
    *               Error surfaced in FreeTmpLegend from LegendAndHide
    *               with seg fault on the LX cluster when trying to free 
@@ -6428,10 +6439,10 @@ static long setkw_xinteger (PyObject * v, int *t, char *kw)
   char *format = "%s keyword requires integer or single character argument";
 
   if (PyInt_Check (v)) {
-    *t = PyInt_AsLong (v);
+    *t = (int)PyInt_AsLong (v);
     return 1;
   } else if (PyString_Check (v)) {
-    char *s = PyString_AsString (v);
+    const char *s = PyString_AsString (v);
     *t = (int) s[0];
     return 1;
   }
@@ -6507,7 +6518,7 @@ static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3])
       return (long) ERRSS ("Error unpacking color tuple.");
     }
     if ((intitem = PyNumber_Int(item)) != NULL) {
-      color_triple[i] = PyInt_AsLong (intitem);
+      color_triple[i] = (unsigned long)PyInt_AsLong (intitem);
       Py_DECREF (intitem);
     } else {
       PyErr_Clear();
@@ -7549,7 +7560,7 @@ static PyObject *unzoom (PyObject * self, PyObject * args)
 }
 
 /* Linear search for keyword in an array of allowable keywords */
-static int verify_kw (char *keyword, char * kwlist[])
+static int verify_kw (const char *keyword, char * kwlist[])
 {
   int i;
 
@@ -8392,7 +8403,7 @@ int set_line_attributes(PyObject *dictionary, GpLineAttribs *attributes)
 { PyObject *width;
   PyObject *color;
   PyObject *type;
-  char* ctype;
+  const char* ctype;
   /*--------------------------------------------------------------------------*/
   width = PyDict_GetItemString(dictionary,"width");
   if (!width)
@@ -8460,9 +8471,9 @@ int set_text_attributes(PyObject* dictionary, GpTextAttribs *attributes)
   PyObject *alignH;
   PyObject *alignV;
   PyObject *color;
-  char* salignH;
-  char* salignV;
-  char* sorient;
+  const char* salignH;
+  const char* salignV;
+  const char* sorient;
   /*--------------------------------------------------------------------------*/
   font = PyDict_GetItemString(dictionary,"font");
   if (!font)
@@ -9252,16 +9263,42 @@ static struct PyMethodDef gist_methods[] =
 /* Initialize the module.  This should be the only symbol with
    external linkage. */
 
-void initgistC (void)
+#if PY_MAJOR_VERSION >= 3
+    static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "gistC",     /* m_name */
+        gist_module_documentation,  /* m_doc */
+        -1,                  /* m_size */
+        gist_methods,        /* m_methods */
+        NULL,                /* m_reload */
+        NULL,                /* m_traverse */
+        NULL,                /* m_clear */
+        NULL,                /* m_free */
+    };
+#endif
+
+#if PY_MAJOR_VERSION >= 3
+PyMODINIT_FUNC PyInit_gistC (void)
+#else
+PyMODINIT_FUNC initgistC (void)
+#endif
 {
-  PyObject *m, *d, *sys_path;
+  PyObject *m, *d, *sys_path, *msys;
   int i, n;
 
+#if PY_MAJOR_VERSION >= 3
+  m = PyModule_Create(&moduledef);
+#else
   m = Py_InitModule4 ("gistC", gist_methods,
                       gist_module_documentation,
                       (PyObject *) 0, PYTHON_API_VERSION);
+#endif
   if (already_initialized)
+#if PY_MAJOR_VERSION >= 3
+    return m;
+#else
     return;
+#endif
   d = PyModule_GetDict (m);
   GistError = PyString_FromString ("gist.error");
   PyDict_SetItemString (d, "error", GistError);
@@ -9303,13 +9340,13 @@ void initgistC (void)
 /* Find that component of sys.path which ends in "/graphics/gist", and
    add it to gistPathDefault.
 */
-  m = (PyObject *) PyImport_AddModule ("sys");
-  d = PyModule_GetDict (m);
+  msys = (PyObject *) PyImport_AddModule ("sys");
+  d = PyModule_GetDict (msys);
   sys_path = PyDict_GetItemString (d, "path");
   n = PySequence_Length(sys_path); /* sys.path is a list of strings. */
   for(i=0; i<n; i++){
     PyObject *op;
-    char *s;
+    const char *s;
     op = PySequence_GetItem( sys_path, i );
     s = PyString_AsString (op);
     if( strstr(s, OUR_SPECIAL_DIR)){
@@ -9349,8 +9386,17 @@ void initgistC (void)
 
   if ( setjmp ( pyg_jmpbuf ) )  {
      p_pending_events();
+#if PY_MAJOR_VERSION >= 3
+     return m;
+#else
      return;
+#endif
   }
+#if PY_MAJOR_VERSION >= 3
+   return m;
+#else
+   return;
+#endif
 }
 
 static int
