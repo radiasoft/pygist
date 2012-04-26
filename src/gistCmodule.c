@@ -148,12 +148,22 @@ static void clearMemList (void);
 
 #if PY_MAJOR_VERSION >= 3
     #define PyString_Check PyUnicode_Check
-    #define PyString_AsString PyUnicode_AS_DATA
     #define PyString_FromString PyUnicode_FromString
     #define PyInt_Check PyLong_Check
     #define PyInt_AsLong PyLong_AsLong
     #define PyInt_FromLong PyLong_FromLong
     #define PyNumber_Int PyNumber_Long
+/* In python3, converting a unicode to a C string can't be done directly. */
+/* This evil function first converts it to PyBytes and returns the string */
+/* from that. This leaves a PyBytes object sitting around. It is dereferenced */
+/* the next time this function is called before creating the next one. */
+PyObject *_tmpstr=NULL;
+char * PyString_AsString(PyObject *ob)
+{
+  Py_XDECREF(_tmpstr);
+  _tmpstr = PyUnicode_AsASCIIString(ob);
+  return PyBytes_AsString(_tmpstr);
+}
 #endif
 
 /* 
@@ -9300,7 +9310,7 @@ PyMODINIT_FUNC initgistC (void)
     return;
 #endif
   d = PyModule_GetDict (m);
-  GistError = PyString_FromString ("gist.error");
+  GistError = PyErr_NewException("gist.error",NULL,NULL);
   PyDict_SetItemString (d, "error", GistError);
   if (PyErr_Occurred ()) {
     Py_FatalError ("Cannot initialize module gist");
