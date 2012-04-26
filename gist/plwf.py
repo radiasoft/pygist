@@ -120,15 +120,15 @@ def plwf (z, y = None, x = None, fill = None, shade = 0, edges = 1,
       # can be arranged by reversing the order of the elements if
       # necessary.
       if iedge < 0.0 :
-         x = reverse (x, 0)
-         y = reverse (y, 0)
+         x = x[::-1,...]
+         y = y[::-1,...]
          if fill != None :
-            fill = reverse (fill, 0)
+            fill = fill[::-1,...]
       if jedge < 0.0 :
-         x = reverse (x, 1)
-         y = reverse (y, 1)
+         x = x[:,::-1]
+         y = y[:,::-1]
          if fill != None :
-            fill = reverse (fill, 1)
+            fill = fill[:,::-1]
       xmax = maxelt_ (x)
       xmin = minelt_ (x)
       ymax = maxelt_ (y)
