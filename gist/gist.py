@@ -58,7 +58,11 @@ __version__ = "1.5.28"
 from numpy import *
 import numpy
 import sys, os	# To be sure expand_path has posixpath and we have sys.path
-from gistC import *
+if sys.hexversion >= 0x03000000:
+    # --- Need to explicitly handle the relative import
+    from .gistC import *
+else:
+    from gistC import *
 from pydoc import help
 from shapetest import is_scalar,no_of_dims,rshape
 
