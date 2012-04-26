@@ -61,7 +61,7 @@ def plwf (z, y = None, x = None, fill = None, shade = 0, edges = 1,
    _square = get_square_ ( )
    [_xfactor, _yfactor] = get_factors_ ( )
 
-   if (type (z) == ListType) :
+   if isinstance(z,list) :
       xyz = z [0]
       fill = z [1]
       shade = z [2]
@@ -70,11 +70,10 @@ def plwf (z, y = None, x = None, fill = None, shade = 0, edges = 1,
       ewidth = z [5]
       cull = z [6]
       cmax = z [7]
-      
+
       xyz1 = get3_xy(xyz, 1)
       x = xyz [0] # the original x
       y = xyz [1] # the original y
-      
 
       # rotate (x,y,0) into on-screen orientation to determine order
       # just use four corners for this

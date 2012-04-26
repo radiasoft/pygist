@@ -126,7 +126,7 @@ def mesh3 (x, y = None, z = None, ** kw) :
       virtuals = [xyz3_irreg, getv3_irreg,
                   getc3_irreg, iterator3_irreg]
       dims = kw ["verts"]
-      if type (dims) != ListType :
+      if not isinstance(dims,list) :
          m3 = [virtuals, [dims, array ( [x, y, z])], []]
       else : # Irregular mesh with more than one cell type
          sizes = ()
@@ -154,7 +154,7 @@ def mesh3 (x, y = None, z = None, ** kw) :
    if len (dims) == 4 and dims [0] == 3 and min (dims) >= 2 :
       xyz = x
       dims = dims [1:4]
-   elif len (dims) == 1 and len (x) == 3 and type (x [0]) == IntType \
+   elif len (dims) == 1 and len (x) == 3 and isinstance(x [0],int) \
       and y != None and z != None and len (y) == len (z) == 3 :
       xyz = array ([y, z])
       dims = (1 + x [0], 1 + x [1], 1 + x [2])
@@ -304,13 +304,13 @@ def slice3 (m3, fslice, nverts, xyzverts, * args, ** kw) :
    global _poly_permutations
 
    iso_index = None
-   if type (fslice) != FunctionType :
+   if not isinstance(fslice,FunctionType) :
       if "value" not in kw and not is_scalar (fslice) and \
          len (shape (fslice)) == 1 and len (fslice) == 4 :
          normal = fslice [0:3]
          projection = fslice [3]
          fslice = _plane_slicer
-      elif is_scalar (fslice) and type (fslice) == IntType :
+      elif is_scalar (fslice) and isinstance(fslice,int) :
          if "value" not in kw :
             raise _Slice3Error, \
                "value= keyword required when FSLICE is mesh variable"
@@ -338,8 +338,8 @@ def slice3 (m3, fslice, nverts, xyzverts, * args, ** kw) :
       fcolor = None
    
    # test the different possibilities for fcolor
-   if need_clist and type (fcolor) != FunctionType :
-      if not is_scalar (fcolor) or type (fcolor) != IntType :
+   if need_clist and not isinstance(fcolor,FunctionType) :
+      if not is_scalar (fcolor) or not isinstance(fcolor,int) :
          raise _Slice3Error, \
             "illegal form of FCOLOR argument, try help,slice3"
 
@@ -392,10 +392,10 @@ def slice3 (m3, fslice, nverts, xyzverts, * args, ** kw) :
          # front, and negative if in back.
       else :
          fs = fslice (m3, chunk)
-      if node == 1 and fcolor != None and fcolor != FunctionType :
+      if node == 1 and fcolor != None and isinstance(fcolor,FunctionType) :
          # need vertex-centered data
          col = getv3 (fcolor, m3, chunk)
-         if type (col) == ListType :
+         if isinstance(col,list) :
             col = col [0]
       else :
          col = None
@@ -403,7 +403,7 @@ def slice3 (m3, fslice, nverts, xyzverts, * args, ** kw) :
       # (_xyz3 comes back as the last element of the list fs)
       _xyz3 = fs [1]
       fs = fs [0]
-      irregular = type (fs) == ListType
+      irregular = isinstance(fs,list)
       if irregular :
          cell_offset = fs [2]
 
@@ -704,14 +704,14 @@ def slice3 (m3, fslice, nverts, xyzverts, * args, ** kw) :
          clist = take (clist, take (cells, list))
       if col == None :
          if nointerp == None :
-            if type (fcolor) == FunctionType :
+            if isinstance(fcolor,FunctionType) :
                col = fcolor (m3, clist + cell_offsets [i], lower, upper, fsl,
                   fsu, pattern - 1)
             else :
                col = getc3 (fcolor, m3, clist + cell_offsets [i], lower, upper,
                   fsl, fsu, pattern - 1)
          else :
-            if type (fcolor) == FunctionType :
+            if isinstance(fcolor,FunctionType) :
                col = fcolor (m3, clist + cell_offsets [i])
             else :
                col = getc3 (fcolor, m3, clist + cell_offsets [i])
@@ -1128,7 +1128,7 @@ def iterator3_irreg (m3, chunk, clist) :
    dims = m3 [1] [0]     # ncells by _no_verts array of subscripts
                          # (or a list of from one to four of same)
 
-   if type (dims) != ListType :
+   if not isinstance(dims,list) :
       if chunk == None:     # get the first chunk
          return [ [0, min (shape (dims) [0], _chunk3_limit)],
                   arange (0, min (shape (dims) [0], _chunk3_limit),
@@ -1248,7 +1248,7 @@ def getv3_irreg (i, m3, chunk) :
    oldfin = chunk [0] [1]
    no_cells = oldfin - oldstart
 
-   if type (verts) != ListType : # Only one kind of cell in mesh
+   if not isinstance(verts,list) : # Only one kind of cell in mesh
       indices = ravel (verts [oldstart:oldfin])
    else : # A list of possibly more than one kind
       sizes = m3 [1] [2]
@@ -1397,15 +1397,15 @@ def getc3_irreg (i, m3, chunk, l, u, fsl, fsu, cells) :
    if i < 1 or i > len (fi) :
       raise _Getc3Error, "no such mesh function as F" + `i - 1`
    verts = m3 [1] [0]
-   if type (verts) == ListType :
+   if isinstance(verts,list) :
       sizes = m3 [1] [2]
       totals = m3 [1] [3]
-   if type (verts) == ListType and totals [-1] == len (fi [i - 1]) or \
-      type (verts) != ListType and shape (verts) [0] == len (fi [i - 1]) :
+   if isinstance(verts,list) and totals [-1] == len (fi [i - 1]) or \
+      not isinstance(verts,list) and shape (verts) [0] == len (fi [i - 1]) :
       # cell-centered case
-      if type (chunk) == ListType :
+      if isinstance(chunk,list) :
          return fi [i - 1] [chunk [0] [0]:chunk [0] [1]]
-      elif type (chunk) == ndarray and len (shape (chunk)) == 1 :
+      elif isinstance(chunk,ndarray) and len (shape (chunk)) == 1 :
          return take (fi [i - 1], chunk)
       else :
          raise _Getc3Error, "chunk argument is incomprehensible."
@@ -1416,17 +1416,17 @@ def getc3_irreg (i, m3, chunk, l, u, fsl, fsu, cells) :
    # vertex-centered case
    # First we need to pick up the vertex subscripts, which are
    # also the fi [i - 1] subscripts.
-   if type (verts) != ListType :
-      if type (chunk) == ListType :
+   if not isinstance(verts,list) :
+      if isinstance(chunk,list) :
          indices = verts [chunk [0] [0]:chunk [0] [1]]
-      elif type (chunk) == ndarray and len (shape (chunk)) == 1 :
+      elif isinstance(chunk,ndarray) and len (shape (chunk)) == 1 :
          indices = take (verts, chunk)
       else :
          raise _Getc3Error, "chunk argument is incomprehensible."
    else :
       # We have a list of vertex subscripts, each for a different
       # type of cell; need to extract the correct list:
-      if type (chunk) == ListType :
+      if isinstance(chunk,list) :
          start = chunk [0] [0]
          fin = chunk [0] [1]
          for j in range (len (totals)) :
@@ -1437,7 +1437,7 @@ def getc3_irreg (i, m3, chunk, l, u, fsl, fsu, cells) :
             start = start - totals [j - 1]
             fin = fin - totals [j - 1]
          indices = verts [start:fin]
-      elif type (chunk) == ndarray and len (shape (chunk)) == 1 :
+      elif isinstance(chunk,ndarray) and len (shape (chunk)) == 1 :
          for j in range (len (totals)) :
             if chunk [-1] <= totals [j] :
                break
@@ -1620,7 +1620,7 @@ def plzcont (nverts, xyzverts, contours = 8, scale = "lin", clear = 1,
    """
 
    # 1. Get contour colors
-   if type (contours) == IntType :
+   if isinstance(contours,int) :
       n = contours
       if cmin != None :
          vcmin = cmin
@@ -1652,7 +1652,7 @@ def plzcont (nverts, xyzverts, contours = 8, scale = "lin", clear = 1,
           vc = z1 + arange (n) * diff
       else :
           raise _ContourError, "Incomprehensible scale parameter."
-   elif type (contours) == ndarray and contours.typecode () == Float :
+   elif isinstance(contours,ndarray) and contours.typecode () == Float :
       n = len (contours)
       vc = sort (contours)
    else :
@@ -1755,7 +1755,7 @@ def pl4cont (nverts, xyzverts, values, contours = 8, scale = "lin", clear = 1,
    """
 
    # 1. Get contour colors
-   if type (contours) == IntType :
+   if isinstance(contours,int) :
       n = contours
       if cmin != None :
           vcmin = cmin
@@ -1787,7 +1787,7 @@ def pl4cont (nverts, xyzverts, values, contours = 8, scale = "lin", clear = 1,
           vc = z1 + arange (n) * diff
       else :
           raise _ContourError, "Incomprehensible scale parameter."
-   elif type (contours) == ndarray and contours.typecode () == Float :
+   elif isinstance(contours,ndarray) and contours.typecode () == Float :
       n = len (contours)
       vc = sort (contours)
    else :
@@ -1912,7 +1912,7 @@ def pl3surf(nverts, xyzverts = None, values = None, cmin = None, cmax = None,
    """
 
    _draw3 = get_draw3_ ( )
-   if type (nverts) == ListType :
+   if isinstance(nverts,list) :
       list = nverts
       nverts = list [0]
       xyzverts = array (list [1], copy = 1)
@@ -2067,7 +2067,7 @@ def pl3tree (nverts, xyzverts = None, values = None, plane = None,
    # avoid overhead of local variables for _pl3tree and _pl3leaf
    # -- I don't know if this is such a big deal
    _draw3 = get_draw3_ ()
-   if type (nverts) == ListType :
+   if isinstance(nverts,list) :
       _nverts = []
       for i in range (len (nverts)) :
          _nverts.append (nverts [i])
@@ -2084,15 +2084,15 @@ def pl3tree (nverts, xyzverts = None, values = None, plane = None,
       plane = plane.astype (Float)
 
    if shape (xyzverts) [0] != sum (nverts) or sum (less (nverts, 3)) > 0 or \
-      type (nverts [0]) != IntType :
+      not isinstance(nverts [0],int) :
       print "Dim1 of xyzverts ", shape (xyzverts) [0], " sum (nverts) ",\
          sum (nverts), " sum (less (nverts, 3)) ", sum (less (nverts, 3)), \
          " type (nverts [0]) ", `type (nverts [0])`
       raise _Pl3treeError, "illegal or inconsistent polygon list."
-   if type (values) == ndarray and len (values) != len (nverts) and \
+   if isinstance(values,ndarray) and len (values) != len (nverts) and \
       len (values) != sum (nverts) :
       raise _Pl3treeError, "illegal or inconsistent polygon color values"
-   if type (values) == ndarray and len (values) == sum (nverts) :
+   if isinstance(values,ndarray) and len (values) == sum (nverts) :
       # We have vertex-centered values, which for Gist must be
       # averaged over each cell
       list = zeros (sum (nverts), Int)
@@ -2640,7 +2640,7 @@ def _pl3leaf (leaf, not_plane, minmax) :
    
    # count number of polys, number of vertices
    _nverts = _xyzverts = 0
-   if type (leaf) == ListType and type (leaf [0]) == ListType :
+   if isinstance(leaf,list) and isinstance(leaf [0],list) :
        for i in range (len (leaf)) :
          [_nverts, _xyzverts] = _pl3tree_count ( leaf [i], _nverts, _xyzverts )
    else :
@@ -2662,7 +2662,7 @@ def _pl3leaf (leaf, not_plane, minmax) :
       _z = None
    _list = 1
    _vlist = 1
-   if type (leaf) == ListType and type (leaf [0]) == ListType :
+   if isinstance(leaf,list) and isinstance(leaf [0],list) :
        if leaf [0] [2] != "bg" :
           _values = zeros (old_nverts, 'B')
        else :
@@ -2958,7 +2958,7 @@ def _isosurface_slicer (m3, chunk, iso_index, _value) :
 # returning the tuple [tmp, None].
 
    tmp = getv3 (iso_index, m3, chunk)
-   if type (tmp) == ListType :
+   if isinstance(tmp,list) :
       tmp[0] = tmp [0] - _value
    else :
       tmp = tmp - _value
@@ -2969,17 +2969,17 @@ def _plane_slicer (m3, chunk, normal, projection) :
    # the tuple. This eliminates the global _xyz3.
 
    x = xyz3(m3,chunk)
-   irregular = type (chunk) == ListType and len (chunk) == 2 \
-      or type (chunk) == ndarray and len (shape (chunk)) == 1 \
-      and type (chunk [0]) == IntType
+   irregular = isinstance(chunk,list) and len (chunk) == 2 \
+      or isinstance(chunk,ndarray) and len (shape (chunk)) == 1 \
+      and isinstance(chunk [0],int)
    if irregular :
       # Need to return a list, the first component being the x's,
       # the second being the relative cell list, and the third an offset
       verts = m3 [1] [0]
       cell_offset = 0
-      if type (verts) == ListType :
+      if isinstance(verts,list) :
          totals = m3 [1] [3]
-         if type (chunk) == ListType :
+         if isinstance(chunk,list) :
             fin = chunk [0] [1]
          else :
             fin = chunk [-1]
@@ -2988,7 +2988,7 @@ def _plane_slicer (m3, chunk, normal, projection) :
                break
          if j > 0 :
             cell_offset = totals [j - 1]
-      if type (chunk) == ListType :
+      if isinstance(chunk,list) :
          clist = arange (0, chunk [0] [1] - chunk [0] [0], typecode = Int)
       else :
          clist = chunk - cell_offset
@@ -3057,9 +3057,9 @@ _xyz3Error = "xyz3Error"
 
 def xyz3_irreg (m3, chunk) :
    xyz = m3 [1] [1]
-   if type (chunk) == ListType and len (chunk) == 2 :
+   if isinstance(chunk,list) and len (chunk) == 2 :
       no_cells = chunk [0] [1] - chunk [0] [0]
-      if type (m3 [1] [0]) == ListType :
+      if isinstance(m3 [1] [0],list) :
          totals = m3 [1] [3]
          start = chunk [0] [0]
          fin = chunk [0] [1]
@@ -3075,11 +3075,11 @@ def xyz3_irreg (m3, chunk) :
       else :
          ns = m3 [1] [0] [chunk [0] [0]:chunk [0] [1]]   # This is a kXnv array
          shp = shape (m3 [1] [0])
-   elif type (chunk) == ndarray and len (shape (chunk)) == 1 and \
-      type (chunk [0]) == IntType :
+   elif isinstance(chunk,ndarray) and len (shape (chunk)) == 1 and \
+      isinstance(chunk [0],int) :
       # chunk is an absolute cell list
       no_cells = len (chunk)
-      if type (m3 [1] [0]) == ListType :
+      if isinstance(m3 [1] [0],list) :
          totals = m3 [1] [3]
          fin = max (chunk)
          for i in range (len (totals)) :
@@ -3179,7 +3179,7 @@ def xyz3_unif (m3, chunk) :
          xyz [:, 0] = add.outer ( xchunk, ijk0) * dxdydz [0] + x0y0z0 [0]
          xyz [:, 1] = add.outer ( ychunk, ijk1) * dxdydz [1] + x0y0z0 [1]
          xyz [:, 2] = add.outer ( zchunk, ijk2) * dxdydz [2] + x0y0z0 [2]
-   elif type (n) == ListType and len (n) == 3: # We have three one-dimensional arrays.
+   elif isinstance(n,list) and len (n) == 3: # We have three one-dimensional arrays.
       xx = n [0]
       yy = n [1]
       zz = n [2]
