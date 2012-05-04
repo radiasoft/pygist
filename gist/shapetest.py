@@ -8,7 +8,7 @@ from types import *
 from numpy import *
 
 def is_scalar (x) :
-   if type (x) == StringType : return 1
+   if isinstance(x,type('')) : return 1
    try :
       y = len (x)
    except (TypeError, AttributeError) :
@@ -18,8 +18,8 @@ def is_scalar (x) :
 # This routine should be able to tell you the size of any object:
 def no_of_dims (x) :
    if x == None : return 0
-   if (type (x) == ndarray) : return len (x.shape)
-   if (type (x) == ListType or type (x) == TupleType) : return 1
+   if isinstance(x,ndarray) : return len (x.shape)
+   if isinstance(x,list) or isinstance(x,tuple) : return 1
    # I don't know if there are any other possibilities.
    for i in range (10) :
       if is_scalar (x) : return i
@@ -37,7 +37,7 @@ def rshape (x) :
    ndim = no_of_dims (x)
    if ndim == 0 : return 0
    s = []
-   if type (x) == ListType or type (x) == TupleType :
+   if isinstance(x,list) or isinstance(x,tuple) :
       for i in range (len (x)) :
          s.append (rshape (x [0]))
          x = x [1:]

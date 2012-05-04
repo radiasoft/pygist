@@ -58,7 +58,11 @@ __version__ = "1.5.28"
 from numpy import *
 import numpy
 import sys, os	# To be sure expand_path has posixpath and we have sys.path
-from gistC import *
+if sys.hexversion >= 0x03000000:
+    # --- Need to explicitly handle the relative import
+    from .gistC import *
+else:
+    from gistC import *
 from pydoc import help
 from shapetest import is_scalar,no_of_dims,rshape
 
@@ -247,7 +251,7 @@ def plmk(y,x=None,marker=None,width=None,color=None,msize=None):
    if marker == None:
       marker = _plmk_markers[(_plmk_count)%7]
       _plmk_count = _plmk_count + 1
-   elif type(marker) == type(0):
+   elif isinstance(marker,int):
       marker = _plmk_markers[marker-1];
 
    xm = marker[0]
@@ -259,7 +263,7 @@ def plmk(y,x=None,marker=None,width=None,color=None,msize=None):
 
    if not color: color = _plmk_color;
    ecolor = color;
-   if type(color) == type(""):
+   if isinstance(color,type("")):
       color = color_dict[color];
   
    if not width: width = _plmk_width;
@@ -413,7 +417,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
    vcmin = numpy.min(where(iregtemp,z,zmax))
    vcmax = numpy.max(where(iregtemp,z,zmin))
 
-   if type (contours) == IntType :
+   if isinstance(contours,int) :
       n = contours
       vc = zeros (n + 2, 'd')
       vc [0] = vcmin
@@ -437,7 +441,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
           vc [1:n + 1] = z1 + arange (n) * diff
       else :
           raise _ContourError, "Incomprehensible scale parameter."
-   elif type (contours) == ndarray and contours.dtype.char == 'd' :
+   elif isinstance(contours,ndarray) and contours.dtype.char == 'd' :
       n = len (contours)
       vc = zeros (n + 2, 'd')
       vc [0] = vcmin
@@ -511,11 +515,11 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
       for i in range(n):
          barx[i] = array([i,i,i+1,i+1])
    else:
-      if type(x) == IntType or type(x) == FloatType:
+      if isinstance(x,int) or isinstance(x,float):
          # x denotes the width of the bars, which are all equal
          for i in range(n-1):
             barx[i] = array([i,i,i+1,i+1]) * x
-      elif type(x) == ListType or type(x) == ndarray:
+      elif isinstance(x,list) or isinstance(x,ndarray):
          if len(x) == n:
             # x denotes the width of the bars, which can be different
             offset = 0
@@ -546,11 +550,11 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
          style['systems'][0]['ticks']['horizontal']['flags'] = flags
          set_style(style)
    if color:
-      if type(color) != ListType and type(color) != ndarray:
+      if not isinstance(color,list) and not isinstance(color,ndarray):
          color = [color] * n
       for i in range(n):
          z = color[i]
-         if type(z) == StringType: z = color_dict[z]
+         if isinstance(z,type('')): z = color_dict[z]
          plfp(array([z],'B'),bary[i],barx[i],[4])
    for i in range(n):
       plg(bary[i],barx[i],width=width,hide=hide,marks=0)

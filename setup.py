@@ -54,6 +54,7 @@ import time
 from distutils.core import setup, Extension
 #from setuptools import setup, Extension
 from distutils.command.config import config
+from distutils.command.install import INSTALL_SCHEMES
 try:
     from distutils.command.config import log
 except:
@@ -986,11 +987,16 @@ if not run_config:
 import numpy
 include_dirs.append(numpy.get_include())
 
+# --- With this, the data_files listed in setup will be installed in
+# --- the usual place in site-packages.
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = scheme['platlib']
+
 # Now we know everything needed to define the extension module
 
 print(library_dirs)
 
-extension = Extension ( 'gistC',
+extension = Extension ( 'gist.gistC',
                         source,
                         include_dirs=include_dirs,
                         library_dirs=library_dirs,
@@ -1006,14 +1012,14 @@ setup (
           description = "Python Wrapped Gist Graphics Package from Yorick",
           author = "Lee Busby, Zane Motteler, Dave Munro",
           maintainer = pygist_maintainer + "; Michiel de Hoon for the Windows version",
-          maintainer_email = "mdehoon@c2b2.columbia.edu",
+          maintainer_email = "dpgrote@lbl.gov",
           url = "http://www.llnl.gov",
           cmdclass = {'config': config_pygist,
                       'build_py':build_py},
-          packages = [''],
-          package_dir = {'': 'gist'},
-          extra_path = 'gist',
-          data_files = [('g',gfiles)],
+          packages = ['gist'],
+          package_dir = {'gist': 'gist'},
+          #extra_path = 'gist',
+          data_files = [('gist',gfiles)],
           ext_modules = [extension],
    )
 
