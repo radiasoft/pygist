@@ -2108,6 +2108,7 @@ static PyObject *contour (PyObject * self, PyObject * args, PyObject * kd)
      n = PyTuple_Size(args);
      TRY (newargs = PyTuple_GetSlice (args, 1, n), (PyObject *) NULL);
      TRY (setz_mesh (newargs, &zop, errstr, kwt[0]), (PyObject *) NULL);
+     Py_DECREF (newargs);
   }
   if (!pyMsh.y)  {
     return ERRSS ("No current mesh - set (y, x) first");
