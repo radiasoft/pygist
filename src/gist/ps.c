@@ -88,56 +88,72 @@ ps_fputs(p_file *file, char *buf)
 
 static int PutPrologLine(p_file *file)
 {
-  if (titleIs && strncmp(line, "%%Title:", 8L)==0) {
-    line[8]= ' ';
-    line[9]= '\0';
-    strncat(line, titleIs, 60L);
-    strcat(line, "\n");
-    titleIs= 0;
-  } else if (needUser && strncmp(line, "%%For:", 6L)==0) {
-    line[6]= ' ';
-    line[7]= '\0';
-    strncat(line, p_getuser(), 60L);
-    strcat(line, "\n");
-    needUser= 0;
-  } else if (needDate && strncmp(line, "%%CreationDate:", 15L)==0) {
-    time_t t= time((time_t *)0);
-    /* ctime returns 26 chars, e.g.- "Sun Jan  3 15:14:13 1988\n\0" */
-    char *st= (t==-1)? "\n" : ctime(&t);
-    line[15]= ' ';
-    line[16]= '\0';
-    strcat(line, st? st : "\n");
-    needDate= 0;
-  }
-  return ps_fputs(file, line);
+  char outline[80];
+  time_t t= time((time_t *)0);
+  char *st= (t==-1)? "\n" : ctime(&t);
+  ps_fputs(file, "%!PS-Adobe-3.0\n");
+  sprintf(outline,"%%%%Title: %s\n",titleIs);
+  ps_fputs(file, outline);
+  sprintf(outline,"%%%%For: %s\n", p_getuser());
+  ps_fputs(file, outline);
+  sprintf(outline,"%%%%CreationDate: %s", st? st : "\n");
+  ps_fputs(file, outline);
+  return ps_fputs(file, pspstext);
+
+//  if (titleIs && strncmp(line, "%%Title:", 8L)==0) {
+//    line[8]= ' ';
+//    line[9]= '\0';
+//    strncat(line, titleIs, 60L);
+//    strcat(line, "\n");
+//    titleIs= 0;
+//  } else if (needUser && strncmp(line, "%%For:", 6L)==0) {
+//    line[6]= ' ';
+//    line[7]= '\0';
+//    strncat(line, p_getuser(), 60L);
+//    strcat(line, "\n");
+//    needUser= 0;
+//  } else if (needDate && strncmp(line, "%%CreationDate:", 15L)==0) {
+//    time_t t= time((time_t *)0);
+//    /* ctime returns 26 chars, e.g.- "Sun Jan  3 15:14:13 1988\n\0" */
+//    char *st= (t==-1)? "\n" : ctime(&t);
+//    line[15]= ' ';
+//    line[16]= '\0';
+//    strcat(line, st? st : "\n");
+//    needDate= 0;
+//  }
+//  return ps_fputs(file, line);
 }
 
 static p_file *CopyProlog(const char *name, const char *title)
 {
-  p_file *psps= GistOpen("ps.ps");
+  /* p_file *psps= GistOpen("ps.ps"); */
   p_file *file= strcmp(name, "*stdout*")? CREATE_PS(name) : pf_stdout;
-  if (!psps) strcpy(gistError, "unable to open PostScript prolog ps.ps");
+  /* if (!psps) strcpy(gistError, "unable to open PostScript prolog ps.ps"); */
   if (!file) strcpy(gistError, "unable to create PostScript output file");
 
-  if (psps && file) {
+  if (file) {
     titleIs= title;
-    needUser= needDate= 1;
-    for (;;) {
-      if (!p_fgets(psps, line, 79) || PutPrologLine(file)<0) {
-        if (file!=pf_stdout) p_fclose(file);
-        file= 0;
-        strcpy(gistError, "bad PostScript prolog format in ps.ps??");
-        break;
-      }
-      if (strncmp(line, "%%EndSetup", 10L)==0) break;
+    PutPrologLine(file);
     }
+//  if (psps && file) {
+//    titleIs= title;
+//    needUser= needDate= 1;
+//    for (;;) {
+//      if (!p_fgets(psps, line, 79) || PutPrologLine(file)<0) {
+//        if (file!=pf_stdout) p_fclose(file);
+//        file= 0;
+//        strcpy(gistError, "bad PostScript prolog format in ps.ps??");
+//        break;
+//      }
+//      if (strncmp(line, "%%EndSetup", 10L)==0) break;
+//    }
+//
+//  } else if (file) {
+//    if (file!=pf_stdout) p_fclose(file);
+//    file= 0;
+//  }
 
-  } else if (file) {
-    if (file!=pf_stdout) p_fclose(file);
-    file= 0;
-  }
-
-  if (psps) p_fclose(psps);
+  /* if (psps) p_fclose(psps); */
   return file;
 }
 
