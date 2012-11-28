@@ -801,12 +801,9 @@ static char *defaultPalette = 0;
 static int curPlotter = -1;
 static int curElement = -1;
 
-static char *hcpNames[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static char **hcpNames;
 static char *tmpLegend = 0;
-static char *windowNames[8] = {
-  "Pygist 0", "Pygist 1", "Pygist 2", "Pygist 3",
-  "Pygist 4", "Pygist 5", "Pygist 6", "Pygist 7"
-};
+static char **windowNames;
 
 /* Next few variables are used by plq(), which does some fancy printing. */
 /* static long prop3sizes[10] = {0, 8, 2, 5, 5, 3, 3, 7, 0, 0}; */
@@ -1539,7 +1536,7 @@ static long _slice2_part (GArrayObject * xyzc, GArrayObject * keep,
 static char *CheckDefaultWindow(void)
 {
   int i;
-  for (i=0 ; i<8 ; i++) if (ghDevices[i].drawing) {
+  for (i=0 ; i<GH_NDEVS ; i++) if (ghDevices[i].drawing) {
     if (!ghDevices[i].display && !ghDevices[i].hcp) {
       Drauing *drawing= ghDevices[i].drawing;
       ghDevices[i].drawing= 0;
@@ -1548,7 +1545,7 @@ static char *CheckDefaultWindow(void)
     }
   }
   if (curPlotter<0) {
-    for (i=0 ; i<8 ; i++) if (ghDevices[i].drawing)
+    for (i=0 ; i<GH_NDEVS ; i++) if (ghDevices[i].drawing)
       return ("graphics window killed -- use window command to re-select");
     ghDevices[0].drawing=
       GdNewDrawing(defaultStyle? defaultStyle : "work.gs");
@@ -1598,7 +1595,7 @@ static void CleanUpGraphics (void)
   if (hcpDefault) {
     GpKillEngine (hcpDefault);
   }
-  for (n = 7; n >= 0; n--) {
+  for (n = GH_NDEVS-1; n >= 0; n--) {
     if (ghDevices[n].display)
       GpKillEngine (ghDevices[n].display);
     if (ghDevices[n].hcp)
@@ -1831,10 +1828,10 @@ static void ForceNewline (void)
 /* Return name of current hardcopy file. */
 static char *GetHCPname (int n)
 {
-  if (n >= 0 && n < 8)
-    return ghDevices[n].hcp ? hcpNames[n] : hcpNames[8];
+  if (n >= 0 && n < GH_NDEVS)
+    return ghDevices[n].hcp ? hcpNames[n] : hcpNames[GH_NDEVS];
   else
-    return hcpNames[8];
+    return hcpNames[GH_NDEVS];
 }
 
 static void GetPCrange (double *zmn, double *zmx, double *z, int *reg,
@@ -2498,8 +2495,8 @@ got1:
 static char *SetHCPname (int n, char *name,int freename)
 {
   char *now;
-  if (n < 0 || n > 7)
-    n = 8;
+  if (n < 0 || n > GH_NDEVS-1)
+    n = GH_NDEVS;
   now = hcpNames[n];
 #if defined(WINDOWS) && !defined(__CYGWIN__)
   hcpNames[n] = name;
@@ -3041,8 +3038,8 @@ static PyObject *hcp_finish (PyObject * self, PyObject * args)
   if (!PyArg_ParseTuple (args, "|i", &n)) {
     return ERRSS ("Bad argument for hcp_finish.");
   }
-  if (n < -1 || n > 7) {
-    return ERRSS ("hcp_finish argument must be -1 through 7 inclusive");
+  if (n < -1 || n > GH_NDEVS-1) {
+    return ERRSS ("hcp_finish argument must be -1 through 63 inclusive");
   }
   p = PyString_FromString (GetHCPname (n));
 
@@ -3693,7 +3690,7 @@ static PyObject *palette (PyObject * self, PyObject * args, PyObject * kd)
     if (PyArg_ParseTuple (args, "s", &filename)) {
       break; /* call was palette (filename) */
     } else if (PyArg_ParseTuple (args, "i", &sourceDevice)) {
-      if (sourceDevice < 0 || sourceDevice >= 7 ||
+      if (sourceDevice < 0 || sourceDevice >= GH_NDEVS-1 ||
           (!(engine = ghDevices[sourceDevice].display) &&
            !(engine = ghDevices[sourceDevice].hcp)))
         return ERRSS ("specified palette source window does not exist");
@@ -7606,7 +7603,7 @@ static char window__doc__[] =
 "                       private=0/1, hcp=`hcp_filename', dump=0/1,\n"
 "                       legends=1/0, style=`style_sheet_filename' ] )\n"
 "     select window N as the current graphics output window.  N may\n"
-"     range from 0 to 7, inclusive.  Each graphics window corresponds to\n"
+"     range from 0 to 63, inclusive.  Each graphics window corresponds to\n"
 "     an X window, and optionally has its own associated hardcopy file.\n"
 "     If N is omitted, it defaults to the current coordinate system.\n"
 "\n"
@@ -7689,8 +7686,8 @@ static PyObject *window (PyObject * self, PyObject * args, PyObject * kd)
   }
 
   if(PyTuple_Size(args) == 1) { /* Window() was called with an argument. */
-    if (n < 0 || n > 7)  {
-      return ERRSS ("graphics windows are numbered from 0 to 7");
+    if (n < 0 || n > GH_NDEVS-1)  {
+      return ERRSS ("graphics windows are numbered from 0 to 63");
     }
     nGiven = (!ghDevices[n].display && !ghDevices[n].hcp);
   } else { /* No argument was given. */
@@ -7849,7 +7846,7 @@ static PyObject *window (PyObject * self, PyObject * args, PyObject * kd)
     paletteSize = 0;
     if (n == curPlotter) {
       /* highest numbered remaining window becomes current window */
-      for (n = 7; n >= 0; n--)
+      for (n = GH_NDEVS-1; n >= 0; n--)
         if (ghDevices[n].display || ghDevices[n].hcp)
           break;
       curPlotter = n;
@@ -9317,6 +9314,14 @@ PyMODINIT_FUNC initgistC (void)
     Py_FatalError ("Cannot initialize module gist");
   }
 
+  /* Give python level access to GH_NDEVS */
+  /* This is bad code since it doesn't check for errors. */
+  {
+  PyObject *PyGH_NDEVS;
+  PyGH_NDEVS = Py_BuildValue("I",(unsigned int)GH_NDEVS);
+  PyDict_SetItemString(d,"GH_NDEVS",PyGH_NDEVS);
+  }
+
 #ifdef import_array
   import_array();
 #endif
@@ -9392,6 +9397,17 @@ PyMODINIT_FUNC initgistC (void)
     /* Call p_idler to set up the idle callback   */
     p_idler(pyg_on_idle);
   }
+
+  /* Initialize the hcpNames and windownames arrays, whose length are set at runtime */
+  /* Note that this memory will never be deallocated. */
+  hcpNames = (char **)PyMem_Malloc((GH_NDEVS+1)*sizeof(char *));
+  windowNames = (char **)PyMem_Malloc(GH_NDEVS*sizeof(char *));
+  for (i = 0 ; i < GH_NDEVS ; i++) {
+    hcpNames[i] = 0;
+    windowNames[i] = (char *)PyMem_Malloc(10*sizeof(char));
+    sprintf(windowNames[i],"Pygist %d",i);
+  }
+  hcpNames[GH_NDEVS] = 0;
 
   already_initialized = 1;
 
