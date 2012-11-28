@@ -1,13 +1,12 @@
 /*
- * HLEVEL.C
- *
  * $Id: hlevel.c,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Define routines for recommended GIST interactive interface
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "hlevel.h"
 #include "pstdlib.h"
@@ -47,7 +46,7 @@ void (*gdraw_hook)(Engine *display, int how)= 0;
 /* ------------------------------------------------------------------------ */
 /* See README for description of these control functions */
 
-GhDevice ghDevices[8];
+GhDevice ghDevices[GH_NDEVS];
 
 Engine *hcpDefault= 0;
 
@@ -70,13 +69,20 @@ static void UpdateOrRedraw(int changesOnly)
   GpPreempt(0);
 }
 
+void (*g_on_idle)(void) = 0;
+
 void GhBeforeWait(void)
 {
-  extern void (*g_pending_task)(void);
+#ifndef NO_XLIB
+  extern void (*g_pending_task)(void);  /* auto disconnect, see xbasic.c */
+  if (g_on_idle) g_on_idle();
   if (g_pending_task) g_pending_task();
+#else
+  if (g_on_idle) g_on_idle();
+#endif
   if (currentDevice<0 || !ghDevices[currentDevice].display ||
       animateOn) return;  /* nothing happens in animate mode until
-                             explicit call to GhFMA */
+                           * explicit call to GhFMA */
   UpdateOrRedraw(1);
 }
 
@@ -163,10 +169,10 @@ void GhFMAMode(int hcp, int animate)
         aport.xmax= 2.0;
         aport.ymin= 0.0;
         aport.ymax= 2.0;
-        if (!port) {
+        /* if (!port) { just animate everything */
           port= &aport;
           animateOn= 2;
-        }
+          /* } */
         if (GxAnimate(display, port)) animateOn= 0;
       } else {
         GxDirect(display);
@@ -177,7 +183,7 @@ void GhFMAMode(int hcp, int animate)
 
 int GhSetPlotter(int number)
 {
-  if (number<0 || number>7) return 1;
+  if (number<0 || number>=GH_NDEVS) return 1;
 
   if (currentDevice>=0) {
     if (ghDevices[currentDevice].display) {
@@ -200,6 +206,39 @@ int GhGetPlotter(void)
   return currentDevice;
 }
 
+/* Query mouse system and position. */
+int
+GhGetMouse(int *sys, double *x, double *y)
+{
+#ifdef NO_XLIB
+  if (sys) *sys = -1;
+  if (x) *x = 0.0;
+  if (y) *y = 0.0;
+  return -1;  
+#else
+  int j, win = -1;
+  if (gxCurrentEngine != NULL) {
+    for (j = 0; j < GH_NDEVS; ++j) {
+      if (ghDevices[j].display == gxCurrentEngine) {
+	win = j;
+	break;
+      }
+    }
+  }
+  if (win >= 0) {
+    if (sys) *sys = gxCurrentSys;
+    if (x) *x = gxCurrentX;
+    if (y) *y = gxCurrentY;
+  } else {
+    if (sys) *sys = -1;
+    if (x) *x = 0.0;
+    if (y) *y = 0.0;
+  }
+  return win;
+#endif
+}
+
+
 #ifndef NO_XLIB
 /* xbasic.c supplies a hook in its error handlers to allow the hlevel
    to clear its display devices */
@@ -211,7 +250,7 @@ static void ShutDownDev(Engine *engine)
   int i;
 
   if (hcpDefault==engine) hcpDefault= 0;
-  for (i=0 ; i<8 ; i++) {
+  for (i=0 ; i<GH_NDEVS ; i++) {
     if (ghDevices[i].display==engine) {
       if (i==currentDevice) currentDevice= -1;
       ghDevices[i].display= 0;
@@ -316,7 +355,7 @@ void GhSetFill(void)
 void GhDumpColors(int n, int hcp, int pryvate)
 {
   Engine *engine;
-  if (n>=0 && n<8) {
+  if (n>=0 && n<GH_NDEVS) {
     if (hcp) engine= ghDevices[n].hcp;
     else engine= ghDevices[n].display;
   } else {
@@ -332,6 +371,8 @@ int GhGetColorMode(Engine *engine)
 
 void GhSetPalette(int n, GpColorCell *palette, int nColors)
 {
+  if (n==-1) n = currentDevice;
+  if (n<0 || n>=GH_NDEVS) return;
   if (ghDevices[n].display && ghDevices[n].display->palette!=palette) {
     GpSetPalette(ghDevices[n].display, palette, nColors);
     if (!ghDevices[n].display->colorMode) GhRedraw();
@@ -345,7 +386,7 @@ int GhReadPalette(int n, const char *gpFile,
 {
   int paletteSize= 0;
   if (n==-1) n = currentDevice;
-  else if (n<0 || n>7) return 0;
+  else if (n<0 || n>=GH_NDEVS) return 0;
   if (ghDevices[n].display) {
     paletteSize= GpReadPalette(ghDevices[n].display, gpFile,
                                &ghDevices[n].display->palette, maxColors);
@@ -371,7 +412,7 @@ int GhGetPalette(int n, GpColorCell **palette)
 {
   *palette= 0;
   if (n==-1) n = currentDevice;
-  else if (n<0 || n>7) return 0;
+  if (n<0 || n>=GH_NDEVS) return 0;
   if (ghDevices[n].display)
     return GpGetPalette(ghDevices[n].display, palette);
   else if (ghDevices[n].hcp)
@@ -383,7 +424,7 @@ int GhGetPalette(int n, GpColorCell **palette)
 void GhDeletePalette(int n)
 {
   GpColorCell *palette= 0;
-  if (n<0 || n>7) return;
+  if (n<0 || n>=GH_NDEVS) return;
   if (ghDevices[n].display) palette= ghDevices[n].display->palette;
   else if (ghDevices[n].hcp) palette= ghDevices[n].hcp->palette;
   if (palette) {
@@ -396,12 +437,12 @@ void GhDeletePalette(int n)
       GpSetPalette(ghDevices[n].hcp, (GpColorCell *)0, 0);
 
     /* free the palette if there are no other references to it */
-    for (i=0 ; i<8 ; i++)
+    for (i=0 ; i<GH_NDEVS ; i++)
       if ((ghDevices[i].display &&
            ghDevices[i].display->palette==palette) ||
           (ghDevices[i].hcp &&
            ghDevices[i].hcp->palette==palette)) break;
-    if (i>=8) {
+    if (i>=GH_NDEVS) {
       if (hcpDefault && palette==hcpDefault->palette)
         GpSetPalette(hcpDefault, (GpColorCell *)0, 0);
       p_free(palette);

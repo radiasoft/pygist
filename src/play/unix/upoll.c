@@ -1,9 +1,12 @@
 /*
- * upoll.c -- $Id: upoll.c,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * $Id: upoll.c,v 1.2 2005-11-22 17:36:40 dhmunro Exp $
  *
  * UNIX poll function implemented with select
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 /*
@@ -23,6 +26,8 @@
 #endif
 
 #ifdef HAVE_SYS_SELECT_H
+/* sys/types.h workaround for MacOS X 10.3 header bug */
+# include <sys/types.h>
 # include <sys/select.h>
 #else
 /* struct timeval should be in sys/time.h, select often there too */
@@ -35,6 +40,31 @@
 #  include <sys/types.h>
    extern int select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 # endif
+#endif
+
+#ifdef NO_POLLING
+/* if timeout, report nothing ready
+ * otherwise, report stdin ready to read (if it was requested)
+ * - this causes subsequent read to block, so effect is as for
+ *   a non-event driven program that waits for stdin
+ */
+#undef select
+#define select fake_select
+static int fake_select(int mx, int *rd, int *wr, int *er, void *tv);
+/* ARGSUSED */
+static int 
+fake_select(int mx, int *rd, int *wr, int *er, void *tv)
+{
+  int ready = (!tv && rd[0]&1);
+  if (ready) {
+    int i;
+    mx = (mx-1)/(8*sizeof(int));
+    rd[0] = 1;
+    er[0] = 0;
+    for (i=1 ; i<=mx ; i++) rd[i] = er[i] = 0;
+  }
+  return ready;
+}
 #endif
 
 static unsigned int *poll_mask = 0;
@@ -84,7 +114,7 @@ u__poll(struct pollfd *fds, unsigned long int nfds, int timeout)
              (void *)(poll_mask+poll_n), ptm);
 
   if (n>0) {
-    for (i=0 ; i<nfds ; i++)
+    for (i=0 ; i<nfds && n>0 ; i++)
       if (fds[i].fd>=0) {
         word = fds[i].fd/(8*sizeof(unsigned int));
         bit = 1 << (fds[i].fd%(8*sizeof(unsigned int)));

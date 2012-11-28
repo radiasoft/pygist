@@ -1,8 +1,11 @@
 /*
- * connect.c -- $Id: connect.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: connect.c,v 1.1 2005-09-18 22:05:34 dhmunro Exp $
  * routines to connect to an X11 server
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "config.h"
@@ -268,6 +271,7 @@ x_screen(x_display *xdpy, int number)
   s->width = DisplayWidth(dpy, number);
   s->height = DisplayHeight(dpy, number);
   s->depth = DefaultDepth(dpy, number);
+  s->nwins = 0;
   cmap = DefaultColormap(dpy, number);
 
   s->pixels = 0;
@@ -529,6 +533,12 @@ p_sshape(p_scr *s, int *width, int *height)
   *width = s->width;
   *height = s->height;
   return s->depth;
+}
+
+int
+p_wincount(p_scr *s)
+{
+  return s? s->nwins : 0;
 }
 
 /* ------------------------------------------------------------------------ */

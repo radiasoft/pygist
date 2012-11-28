@@ -1,13 +1,12 @@
 /*
- * DRAW.H
- *
  * $Id: draw.h,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Declare display list structures of GIST C interface
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef DRAW_H
 #define DRAW_H
@@ -221,7 +220,7 @@ struct Drauing {
 };
 
 /* The list of GIST drawings */
-extern Drauing *gistDrawList;
+PLUG_API Drauing *gistDrawList;
 
 /* The following functions are intended to assist in writing the
    constructors for new types of Drauing Elements */
@@ -229,30 +228,30 @@ extern Drauing *gistDrawList;
 /* generic function for adding elements to current system--
    note that you must reset el->ops by hand, since only the predefined
    types are treated properly */
-extern void GeAddElement(int type, GdElement *element);
+PLUG_API void GeAddElement(int type, GdElement *element);
 
 /* generic function to mark element as unscanned if in a coordinate
    system, else set its box */
-extern void GeMarkForScan(GdElement *el, GpBox *linBox);
+PLUG_API void GeMarkForScan(GdElement *el, GpBox *linBox);
 
 /* generic function to get the current mesh, returning a GeMeshXY*,
    and optionally not copying the gistA.mesh arrays.  The return
    value is iMax*jMax (0 on failure) */
-extern long GeGetMesh(int noCopy, GaQuadMesh *meshin, int region,
+PLUG_API long GeGetMesh(int noCopy, GaQuadMesh *meshin, int region,
                       void *vMeshEl);
 
 /* Updates the system limits if necessary -- do not use lightly.  */
-extern int GdScan(GeSystem *system);
+PLUG_API int GdScan(GeSystem *system);
 
 /* Defined in engine.c.  These routines communicate state information
    from the drawing to the engine.  They are not intended for external
    use.  */
-extern int GdBeginDr(Drauing *drawing, GpBox *damage, int landscape);
+PLUG_API int GdBeginDr(Drauing *drawing, GpBox *damage, int landscape);
    /* GdBeginSy returns 1 bit to draw elements, 2 bit to draw ticks */
-extern int GdBeginSy(GpBox *tickOut, GpBox *tickIn,
-                     GpBox *viewport, int number, int sysIndex);
+PLUG_API int GdBeginSy(GpBox *tickOut, GpBox *tickIn,
+                       GpBox *viewport, int number, int sysIndex);
    /* GdBeginEl returns 1 if elements should be drawn, else 0 */
-extern int GdBeginEl(GpBox *box, int number);
-extern void GdEndDr(void);
+PLUG_API int GdBeginEl(GpBox *box, int number);
+PLUG_API void GdEndDr(void);
 
 #endif

@@ -1066,8 +1066,8 @@ def _gnomon_draw ( ) :
    plsys (1)
 
    # Compute point size of labels (1/3 of axis length)
-   pts = [8, 10, 12, 14, 18, 24] [digitize (_gnomon_scale / 3.0,
-         array ([9, 11, 13, 16, 21], Int))]
+   pts = [8, 10, 12, 14, 18, 24] [digitize ([_gnomon_scale / 3.0],
+         array ([9, 11, 13, 16, 21], Int))[0]]
 
    if _gnomon_scale < 21.0 :
       x1 = x1 * 21. / _gnomon_scale

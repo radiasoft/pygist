@@ -1,13 +1,12 @@
 /*
- * GREAD.C
- *
  * $Id: gread.c,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Define Drauing gread read routine for GIST
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "gist.h"
 #include "pstdio.h"
@@ -83,6 +82,19 @@ char *g_argv0 = 0;
 
 static char *scratch = 0;
 static char *gist_path = 0;
+
+char *
+g_set_path(char *gpath)
+{
+  if (gpath) {
+    char *p = gist_path;
+    gist_path = p_strcpy(gpath);
+    if (p) p_free(p);
+  } else {
+    FormGistPath();
+  }
+  return gist_path;
+}
 
 static char *FormGistPath(void)
 {

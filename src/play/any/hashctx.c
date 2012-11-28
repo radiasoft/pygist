@@ -1,8 +1,11 @@
 /*
- * hashctx.c -- $Id: hashctx.c,v 1.1 2009/11/19 23:44:48 dave Exp $
+ * $Id: hashctx.c,v 1.1 2005-09-18 22:05:44 dhmunro Exp $
  * generic pointer<->context association functions
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "config.h"

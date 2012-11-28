@@ -1,8 +1,11 @@
 /*
- * pathnm.c -- $Id: pathnm.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: pathnm.c,v 1.1 2005-09-18 22:05:35 dhmunro Exp $
  * p_getenv and w_pathname pathname preprocessing for MS Windows
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"
@@ -22,9 +25,9 @@ p_getenv(const char *name)
 char *
 w_pathname(const char *name)
 {
-  const char *tmp;
+  const char *tmp = name;
   long len = 0;
-  unsigned long left = P_WKSIZ;
+  long left = P_WKSIZ;
 
   if (name[0]=='$') {
     int delim = *(++name);
@@ -32,30 +35,36 @@ w_pathname(const char *name)
     else if (delim=='{') { delim = '}';  name++; }
     else                   delim = '\0';
     for (tmp=name ; tmp[0] ; tmp++)
-      if ((delim && tmp[0]==delim) ||
-          tmp[0]=='/' || tmp[0]=='\\') break;
+      if (delim? (tmp[0]==delim) : (tmp[0]=='/' || tmp[0]=='\\')) break;
     if (tmp>name+1024) {
       p_wkspc.c[0] = '\0';
       return p_wkspc.c;
     }
-    if (tmp>name) {
-      char env_name[1024];
-      len = tmp-name;
+    len = tmp-name;
+    if (len && delim) tmp++;
+  } else if (name[0]=='~' && (!name[1] || name[1]=='/' || name[1]=='\\')) {
+    tmp++;
+    len = -1;
+  }
+  if (len) {
+    char env_name[1024];
+    if (len < 0) {
+      strcpy(env_name, "HOME");
+    } else {
       env_name[0] = '\0';
       strncat(env_name, name, len);
-      len = GetEnvironmentVariable(env_name, p_wkspc.c, P_WKSIZ);
-      if (len>P_WKSIZ) len = left+1;
-      left -= len;
-      if (left<0) {
-        p_wkspc.c[0] = '\0';
-        return p_wkspc.c;
-      }
-      if (!delim) tmp++;
-      name = tmp;
     }
+    len = GetEnvironmentVariable(env_name, p_wkspc.c, P_WKSIZ);
+    if (len>P_WKSIZ) len = left+1;
+    left -= len;
+    if (left<0) {
+      p_wkspc.c[0] = '\0';
+      return p_wkspc.c;
+    }
+    name = tmp;
   }
 
-  if (strlen(name)<=left) strcpy(p_wkspc.c+len, name);
+  if ((long)strlen(name)<=left) strcpy(p_wkspc.c+len, name);
   else p_wkspc.c[0] = '\0';
 
   for (left=0 ; p_wkspc.c[left] ; left++)

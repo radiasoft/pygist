@@ -1,11 +1,14 @@
 /*
- * handler.c -- $Id: handler.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: handler.c,v 1.1 2005-09-18 22:05:37 dhmunro Exp $
  * MS Windows exception handling
  * - w_interrupt raises a signal in worker thread from boss thread,
  *   idea from MSDN "Win32 Q&A" KillThrd library
  *   by Jeffrey Richter in Microsoft Systems Journal
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"
@@ -13,6 +16,16 @@
 
 #include <process.h>
 #include <float.h>
+
+#ifndef _MCW_EM
+/* some cygwin/mingw platforms fail to define these in float.h */
+#define _MCW_EM        0x0008001f
+#define _EM_OVERFLOW   0x00000004
+#define _EM_ZERODIVIDE 0x00000008
+#define _EM_INVALID    0x00000010
+extern void _fpreset(void);
+extern unsigned int _controlfp(unsigned int unNew, unsigned int unMask);
+#endif
 
 #define W_SIGINT_DELAY 1000
 
@@ -78,7 +91,7 @@ w_sigint(int delay)
     HANDLE h;
     UINT id;
     p_signalling = PSIG_INT;
-    h = CreateThread(0,0, sigint_main, 0, 0, &id);
+    h = CreateThread(0,0, sigint_main, 0, 0, (void *)&id);
     if (h) {
       Sleep(0);
       CloseHandle(h);

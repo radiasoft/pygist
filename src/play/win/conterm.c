@@ -1,19 +1,21 @@
 /*
- * conterm.c -- $Id: conterm.c,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * $Id: conterm.c,v 1.1 2005-09-18 22:05:37 dhmunro Exp $
  * console specific part of wstdio.c
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"
 
 static void con_sender(void *context);
-static void con_stdout(char *output_line, long len);
-static void con_stderr(char *output_line, long len);
 
 static HANDLE w_hin = INVALID_HANDLE_VALUE;
 static HANDLE w_hout = INVALID_HANDLE_VALUE;
 static HANDLE w_herr = INVALID_HANDLE_VALUE;
+static int w_oeinit = 0;
 static HANDLE stdin_ready = 0;
 static HANDLE stdin_accepted = 0;
 static DWORD WINAPI stdin_main(LPVOID lp);
@@ -39,12 +41,13 @@ con_stdinit(void (**wout)(char*,long), void (**werr)(char*,long))
     return 1;
   w_herr = GetStdHandle(STD_ERROR_HANDLE);
   if (w_herr == INVALID_HANDLE_VALUE) w_herr = w_hout;
+  w_oeinit = 3;
   stdin_ready = CreateEvent(0,0,0,0);
   stdin_accepted = CreateEvent(0,0,0,0);
   if (stdin_ready && stdin_accepted &&
       w_hin!=INVALID_HANDLE_VALUE && w_hout!=INVALID_HANDLE_VALUE) {
     UINT id;
-    h = CreateThread(0,0, stdin_main, 0, 0, &id);
+    h = CreateThread(0,0, stdin_main, 0, 0, (void *)&id);
     if (h) {
       w_add_input(stdin_ready, con_sender, 0);
       Sleep(0);
@@ -111,16 +114,30 @@ con_sender(void *context)
   w_deliver(w_sendbuf(-1));
 }
 
-void con_stdout(char *line, long len)
+void
+con_stdout(char *line, long len)
 {
   DWORD n;
+  if (w_hout == INVALID_HANDLE_VALUE) {
+    if (w_oeinit & 1) return;
+    w_hout = GetStdHandle(STD_OUTPUT_HANDLE);
+    w_oeinit |= 1;
+    if (w_hout == INVALID_HANDLE_VALUE) return;
+  }
   WriteFile(w_hout, line, len, &n, 0);
   FlushFileBuffers(w_hout);
 }
 
-void con_stderr(char *line, long len)
+void
+con_stderr(char *line, long len)
 {
   DWORD n;
+  if (w_herr == INVALID_HANDLE_VALUE) {
+    if (w_oeinit & 2) return;
+    w_herr = GetStdHandle(STD_ERROR_HANDLE);
+    w_oeinit |= 2;
+    if (w_herr == INVALID_HANDLE_VALUE) return;
+  }
   WriteFile(w_herr, line, len, &n, 0);
   FlushFileBuffers(w_hout);
 }

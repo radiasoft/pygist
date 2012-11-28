@@ -1,29 +1,37 @@
 /*
- * play.h -- $Id: play.h,v 1.1 2009/11/19 23:44:48 dave Exp $
+ * $Id: play.h,v 1.4 2010-04-08 10:53:49 thiebaut Exp $
  * portability layer programming model declarations
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
-#include "extern_c.h"
+#ifndef _PLAY_H
+#define _PLAY_H 1
+
+#include "plugin.h"
+
+BEGIN_EXTERN_C
 
 /* application entry point */
 extern int on_launch(int argc, char *argv[]);
 
 /* main event loop control and system services */
-extern void p_quit(void);
-extern void p_abort(void);                /* never returns to caller */
-extern void p_qclear(void);               /* clears event queue */
-extern void p_stdout(char *output_line);  /* only after p_stdinit */
-extern void p_stderr(char *output_line);  /* only after p_stdinit */
-extern double p_wall_secs(void);          /* must interoperate with on_poll */
-extern double p_cpu_secs(double *sys);
+PLUG_API void p_quit(void);
+PLUG_API void p_abort(void);               /* never returns to caller */
+PLUG_API void p_qclear(void);              /* clears event queue */
+PLUG_API void p_stdout(char *output_line); /* only after p_stdinit */
+PLUG_API void p_stderr(char *output_line); /* only after p_stdinit */
+PLUG_API double p_wall_secs(void);         /* must interoperate with on_poll */
+PLUG_API double p_cpu_secs(double *sys);
 /* p_getenv and p_getuser return pointers to static memory */
-extern char *p_getenv(const char *name);
-extern char *p_getuser(void);
+PLUG_API char *p_getenv(const char *name);
+PLUG_API char *p_getuser(void);
 
 /* dont do anything critical if this is set -- call p_abort */
-extern volatile int p_signalling;
+PLUG_API volatile int p_signalling;
 
 /* data structures (required for screen graphics only)
  * - p_scr represents a screen (plus keyboard and mouse)
@@ -35,117 +43,141 @@ typedef unsigned long p_col_t;
 
 /* routines to establish callback functions for various events
  * - application calls these either once or never */
-extern void p_quitter(int (*on_quit)(void));
-extern void p_stdinit(void (*on_stdin)(char *input_line));
-extern void p_handler(void (*on_exception)(int signal, char *errmsg));
-extern void p_gui(void (*on_expose)(void *c, int *xy),
-                  void (*on_destroy)(void *c),
-                  void (*on_resize)(void *c,int w,int h),
-                  void (*on_focus)(void *c,int in),
-                  void (*on_key)(void *c,int k,int md),
-                  void (*on_click)(void *c,int b,int md,int x,int y,
-                                   unsigned long ms),
-                  void (*on_motion)(void *c,int md,int x,int y),
-                  void (*on_deselect)(void *c),
-                  void (*on_panic)(p_scr *screen));
-extern void (*p_on_connect)(int dis, int fd);
+PLUG_API void p_quitter(int (*on_quit)(void));
+PLUG_API void p_stdinit(void (*on_stdin)(char *input_line));
+PLUG_API void p_handler(void (*on_exception)(int signal, char *errmsg));
+PLUG_API void p_gui(void (*on_expose)(void *c, int *xy),
+                    void (*on_destroy)(void *c),
+                    void (*on_resize)(void *c,int w,int h),
+                    void (*on_focus)(void *c,int in),
+                    void (*on_key)(void *c,int k,int md),
+                    void (*on_click)(void *c,int b,int md,int x,int y,
+                                     unsigned long ms),
+                    void (*on_motion)(void *c,int md,int x,int y),
+                    void (*on_deselect)(void *c),
+                    void (*on_panic)(p_scr *screen));
+PLUG_API void p_gui_query(void (**on_expose)(void *c, int *xy),
+			  void (**on_destroy)(void *c),
+			  void (**on_resize)(void *c,int w,int h),
+			  void (**on_focus)(void *c,int in),
+			  void (**on_key)(void *c,int k,int md),
+			  void (**on_click)(void *c,int b,int md,int x,int y,
+					    unsigned long ms),
+			  void (**on_motion)(void *c,int md,int x,int y),
+			  void (**on_deselect)(void *c),
+			  void (**on_panic)(p_scr *screen));
+PLUG_API void (*p_on_connect)(int dis, int fd);
+
+/* asynchronous subprocesses using callbacks (see also p_popen, p_system) */
+typedef struct p_spawn_t p_spawn_t;
+extern p_spawn_t *p_spawn(char *name, char **argv,
+                          void (*callback)(void *ctx, int err),
+                          void *ctx, int err);
+extern long p_recv(p_spawn_t *proc, char *msg, long len);
+/* in p_send msg=0, len<0 sends signal -len */
+extern int p_send(p_spawn_t *proc, char *msg, long len);
+extern void p_spawf(p_spawn_t *proc, int nocallback);
 
 /* screen graphics connection */
-extern p_scr *p_connect(char *server_name);  /* server_name 0 gets default */
-extern void p_disconnect(p_scr *screen);
-extern p_scr *p_multihead(p_scr *other_screen, int number);
+PLUG_API p_scr *p_connect(char *server_name);  /* server_name 0 gets default */
+PLUG_API void p_disconnect(p_scr *screen);
+PLUG_API p_scr *p_multihead(p_scr *other_screen, int number);
 
 /* screen graphics queries (note when parameter is screen not window) */
-extern int p_txheight(p_scr *s, int font, int pixsize, int *baseline);
-extern int p_txwidth(p_scr *s, const char *text, int n, int font, int pixsize);
-extern int p_sshape(p_scr *s, int *width, int *height);
-extern void p_winloc(p_win *w, int *x, int *y);
+PLUG_API int p_txheight(p_scr *s, int font, int pixsize, int *baseline);
+PLUG_API int p_txwidth(p_scr *s, const char *text,int n, int font,int pixsize);
+PLUG_API int p_sshape(p_scr *s, int *width, int *height);
+PLUG_API int p_wincount(p_scr *s);
+PLUG_API void p_winloc(p_win *w, int *x, int *y);
 
 /* screen graphics window and pixmap management */
-extern p_win *p_window(p_scr *s, int width, int height, char *title,
-                       p_col_t bg, int hints, void *ctx);
-extern p_win *p_menu(p_scr *s, int width, int height, int x, int y,
-                     p_col_t bg, void *ctx);
-extern p_win *p_offscreen(p_win *parent, int width, int height);
-extern p_win *p_metafile(p_win *parent, char *filename,
-                         int x0, int y0, int width, int height, int hints);
-extern void p_destroy(p_win *w);
+PLUG_API p_win *p_window(p_scr *s, int width, int height, char *title,
+                         p_col_t bg, int hints, void *ctx);
+PLUG_API p_win *p_subwindow(p_scr *s, int width, int height,
+                            unsigned long parent_id, int x, int y,
+                            p_col_t bg, int hints, void *ctx);
+PLUG_API p_win *p_menu(p_scr *s, int width, int height, int x, int y,
+                       p_col_t bg, void *ctx);
+PLUG_API p_win *p_offscreen(p_win *parent, int width, int height);
+PLUG_API p_win *p_metafile(p_win *parent, char *filename,
+                           int x0, int y0, int width, int height, int hints);
+PLUG_API void p_destroy(p_win *w);
 
 /* screen graphics interactions with selection or clipboard */
-extern int p_scopy(p_win *w, char *string, int n);
-extern char *p_spaste(p_win *w);
+PLUG_API int p_scopy(p_win *w, char *string, int n);
+PLUG_API char *p_spaste(p_win *w);
 
 /* screen graphics control functions */
-extern void p_feep(p_win *w);
-extern void p_flush(p_win *w);
-extern void p_clear(p_win *w);
-extern void p_resize(p_win *w, int width, int height);
-extern void p_raise(p_win *w);
-extern void p_cursor(p_win *w, int cursor);
-extern void p_palette(p_win *w, p_col_t *colors, int n);
-extern void p_clip(p_win *w, int x0, int y0, int x1, int y1);
+PLUG_API void p_feep(p_win *w);
+PLUG_API void p_flush(p_win *w);
+PLUG_API void p_clear(p_win *w);
+PLUG_API void p_resize(p_win *w, int width, int height);
+PLUG_API void p_raise(p_win *w);
+PLUG_API void p_cursor(p_win *w, int cursor);
+PLUG_API void p_palette(p_win *w, p_col_t *colors, int n);
+PLUG_API void p_clip(p_win *w, int x0, int y0, int x1, int y1);
 
 /* screen graphics property setting functions */
-extern void p_color(p_win *w, p_col_t color);
-extern void p_font(p_win *w, int font, int pixsize, int orient);
-extern void p_pen(p_win *w, int width, int type);
+PLUG_API void p_color(p_win *w, p_col_t color);
+PLUG_API void p_font(p_win *w, int font, int pixsize, int orient);
+PLUG_API void p_pen(p_win *w, int width, int type);
 
 /* set point list for p_dots, p_lines, p_fill, p_segments (pairs in list)
  * if n>=0, creates a new list of points
  * if n<0, appends to existing list of points
  * total number of points (after all appends) will be <=2048
  * any drawing call resets the point list */
-extern void p_i_pnts(p_win *w, const int *x, const int *y, int n);
-extern void p_d_pnts(p_win *w, const double *x, const double *y, int n);
+PLUG_API void p_i_pnts(p_win *w, const int *x, const int *y, int n);
+PLUG_API void p_d_pnts(p_win *w, const double *x, const double *y, int n);
 /* query or set coordinate mapping for p_d_pnts */
-extern void p_d_map(p_win *w, double xt[], double yt[], int set);
+PLUG_API void p_d_map(p_win *w, double xt[], double yt[], int set);
 
 /* screen graphics drawing functions */
-extern void p_text(p_win *w, int x0, int y0, const char *text, int n);
-extern void p_rect(p_win *w, int x0, int y0, int x1, int y1, int border);
-extern void p_ellipse(p_win *w, int x0, int y0, int x1, int y1, int border);
-extern void p_dots(p_win *w);
-extern void p_segments(p_win *w);
-extern void p_lines(p_win *w);
-extern void p_fill(p_win *w, int convexity);
-extern void p_ndx_cell(p_win *w, unsigned char *ndxs, int ncols, int nrows,
+PLUG_API void p_text(p_win *w, int x0, int y0, const char *text, int n);
+PLUG_API void p_rect(p_win *w, int x0, int y0, int x1, int y1, int border);
+PLUG_API void p_ellipse(p_win *w, int x0, int y0, int x1, int y1, int border);
+PLUG_API void p_dots(p_win *w);
+PLUG_API void p_segments(p_win *w);
+PLUG_API void p_lines(p_win *w);
+PLUG_API void p_fill(p_win *w, int convexity);
+PLUG_API void p_ndx_cell(p_win *w, unsigned char *ndxs, int ncols, int nrows,
+                         int x0, int y0, int x1, int y1);
+PLUG_API void p_rgb_cell(p_win *w, unsigned char *rgbs, int ncols, int nrows,
+                         int x0, int y0, int x1, int y1);
+PLUG_API void p_bitblt(p_win *w, int x, int y, p_win *offscreen,
                        int x0, int y0, int x1, int y1);
-extern void p_rgb_cell(p_win *w, unsigned char *rgbs, int ncols, int nrows,
-                       int x0, int y0, int x1, int y1);
-extern void p_bitblt(p_win *w, int x, int y, p_win *offscreen,
-                     int x0, int y0, int x1, int y1);
 
-extern void p_rgb_read(p_win *w, unsigned char *rgbs,
-                       int x0, int y0, int x1, int y1);
+PLUG_API void p_rgb_read(p_win *w, unsigned char *rgbs,
+                         int x0, int y0, int x1, int y1);
 
 /*------------------------------------------------------------------------*/
 /* following have generic implementations */
 
 /* idle and alarm "events" */
-extern void p_idler(int (*on_idle)(void));
-extern void p_on_idle(int reset);
-extern double p_timeout(void);
-extern void p_set_alarm(double secs, void (*on_alarm)(void *context),
-                        void *context);
-extern void p_clr_alarm(void (*on_alarm)(void *c), void *context);
+PLUG_API void p_idler(int (*on_idle)(void));
+PLUG_API void p_on_idle(int reset);
+PLUG_API double p_timeout(void);
+PLUG_API void p_set_alarm(double secs, void (*on_alarm)(void *context),
+                          void *context);
+PLUG_API void p_clr_alarm(void (*on_alarm)(void *c), void *context);
 
 /* bitmap rotation, lsbit first and msbit first versions */
-extern unsigned char p_bit_rev[256];
-extern void p_lrot180(unsigned char *from, unsigned char *to,
-                      int fcols, int frows);
-extern void p_lrot090(unsigned char *from, unsigned char *to,
-                      int fcols, int frows);
-extern void p_lrot270(unsigned char *from, unsigned char *to,
-                      int fcols, int frows);
-extern void p_mrot180(unsigned char *from, unsigned char *to,
-                      int fcols, int frows);
-extern void p_mrot090(unsigned char *from, unsigned char *to,
-                      int fcols, int frows);
-extern void p_mrot270(unsigned char *from, unsigned char *to,
-                      int fcols, int frows);
+PLUG_API unsigned char p_bit_rev[256];
+PLUG_API void p_lrot180(unsigned char *from, unsigned char *to,
+                        int fcols, int frows);
+PLUG_API void p_lrot090(unsigned char *from, unsigned char *to,
+                        int fcols, int frows);
+PLUG_API void p_lrot270(unsigned char *from, unsigned char *to,
+                        int fcols, int frows);
+PLUG_API void p_mrot180(unsigned char *from, unsigned char *to,
+                        int fcols, int frows);
+PLUG_API void p_mrot090(unsigned char *from, unsigned char *to,
+                        int fcols, int frows);
+PLUG_API void p_mrot270(unsigned char *from, unsigned char *to,
+                        int fcols, int frows);
 
 /* 5x9x5 rgb colormap for p_palette(w,p_595,225) */
-extern p_col_t p_595[225];
+PLUG_API p_col_t p_595[225];
 
 END_EXTERN_C
 
@@ -266,3 +298,5 @@ END_EXTERN_C
 #define P_F10     0x020a
 #define P_F11     0x020b
 #define P_F12     0x020c
+
+#endif /* _PLAY_H */

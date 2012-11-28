@@ -1,13 +1,12 @@
 /*
- * XFANCY.C
- *
  * $Id: xfancy.c,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Implement the basic X windows engine for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "xfancy.h"
 #include "draw.h"
@@ -115,8 +114,11 @@ GpFXEngine(char *name, int landscape, int dpi, char *displayName)
   /* possibly want optional P_RGBMODEL as well */
   hints = (gist_private_map?P_PRIVMAP:0) | (gist_input_hint?0:P_NOKEY) |
     (gist_rgb_hint?P_RGBMODEL:0);
-  fxe->xe.win = fxe->xe.w =
+  fxe->xe.win = fxe->xe.w = gx_parent?
+    p_subwindow(s, topWidth, topHeight+heightButton+2,
+                gx_parent, gx_xloc, gx_yloc, P_BG, hints, fxe) :
     p_window(s, topWidth, topHeight+heightButton+2, name, P_BG, hints, fxe);
+  gx_parent = 0;
   if (!fxe->xe.win) {
     GpDelEngine(&fxe->xe.e);
     return 0;
@@ -438,6 +440,12 @@ static char stdFormat[] = "%7.4f";
 static int rubberBanding = 0;
 static int anchorX, anchorY, oldX, oldY;
 
+
+/* Variables to store coordinate system and mouse coordinates after
+   last mouse motion. */
+int gxCurrentSys = -1;
+GpReal gxCurrentX = 0, gxCurrentY = 0;
+
 static void
 MovePointer(FXEngine *fxe, Drauing *drawing,
             int md,int x,int y)
@@ -479,6 +487,12 @@ MovePointer(FXEngine *fxe, Drauing *drawing,
     sprintf(format, "%%s%%2d (%s, %s)", f1, f2);
     sprintf(fxe->msgText, format, locked? "=" : ":", iSystem, xWC, yWC);
 
+    /* Save mouse coordinates. */
+    gxCurrentX = xWC;
+    gxCurrentY = yWC;
+    gxCurrentSys = iSystem;
+    gxCurrentEngine = (Engine *)fxe;
+    
     RedrawMessage(fxe);
   }
   if (rubberBanding) DrawRubber(fxe, x, y);
@@ -721,11 +735,16 @@ static int FindSystem(FXEngine *fxe, Drauing *drawing, int x, int y,
   GeSystem *sys= drawing->systems, *thesys=sys;
   int nSystems= drawing->nSystems;
   GpXYMap *map= &fxe->xe.e.map;  /* NDC->VDC (x,y) mapping */
-  GpReal xn= ((GpReal)x - map->x.offset)/map->x.scale;
-  GpReal yn= ((GpReal)y - map->y.offset)/map->y.scale;
+  GpReal xn, yn;
   GpBox *box;
   int i, iSystem=0;
   GpReal min=9., tmp; /* assume all viewports have area<9 */
+  if (fxe->xe.w != fxe->xe.win) { /* adjust for animation mode margins */
+    x -= fxe->xe.a_x;
+    y -= fxe->xe.a_y;
+  }
+  xn = ((GpReal)x - map->x.offset)/map->x.scale;
+  yn = ((GpReal)y - map->y.offset)/map->y.scale;
   for (i=nSystems ; i>0 ; i--) {
     sys= (GeSystem *)sys->el.prev;
     if (!sys->elements ||
@@ -780,9 +799,14 @@ static void Find1System(FXEngine *fxe, Drauing *drawing, int iSystem,
                         GpReal *xr, GpReal *yr)
 {
   GpXYMap *map= &fxe->xe.e.map; /* NDC->VDC (x,y) mapping */
-  GpReal xn= ((GpReal)x - map->x.offset)/map->x.scale;
-  GpReal yn= ((GpReal)y - map->y.offset)/map->y.scale;
+  GpReal xn, yn;
   GeSystem *sys= GetSystemN(drawing, iSystem);
+  if (fxe->xe.w != fxe->xe.win) { /* adjust for animation mode margins */
+    x -= fxe->xe.a_x;
+    y -= fxe->xe.a_y;
+  }
+  xn = ((GpReal)x - map->x.offset)/map->x.scale;
+  yn = ((GpReal)y - map->y.offset)/map->y.scale;
   if (sys && (!(sys->rescan || sys->unscanned>=0) ||
               !GdScan(sys))) {
     FindCoordinates(sys, xn, yn, xr, yr);

@@ -1,20 +1,11 @@
 /*
- * pwin.c -- $Id: pwin.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: pwin.c,v 1.3 2007-06-24 20:32:49 dhmunro Exp $
  * routines to create graphics devices for MS Windows
- * 
- * CHANGES:
- * 12/06/04 mdh Correct bug in p_destroy: 
- *              The call to DestroyWindow effectively calls the w_winproc 
- *              window routine with the WM_DESTROY message. It does not simply 
- *              post this message, but calls w_winproc immediately. In the 
- *              w_winproc function, pw is free'd:  p_free(pw);
- *              (line 400 in src/play/win/pscr.c). So, by the time we get to 
- *              the end of the p_destroy routine, pw has been freed and we 
- *              cannot access pw->pbflag, pw->pen, and pw->brush. Moving the 
- *              last two lines to the top of the p_destroy routine solves the 
- *              problem.
- *
- * Copyright (c) 2000.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"
@@ -38,6 +29,42 @@ p_cursor(p_win *w, int cursor)
   if (!w->cursor)
     w->cursor = w->s->cursors[cursor] = w_cursor(cursor);
   SetCursor(w->cursor);
+}
+
+p_win *p_subwindow(p_scr *s, int width, int height,
+                   unsigned long parent_id, int x, int y,
+                   p_col_t bg, int hints, void *ctx)
+{
+  p_win *pw = w_pwin(ctx, s, 0, 0, bg);
+  HWND hw;
+  HWND parent = (HWND)parent_id;
+  DWORD xstyle = 0;
+  DWORD style = WS_CHILD;
+
+  if (!pw) return 0;
+
+  pw->ancestor = 0;
+  style |= WS_CHILD;
+
+  hw = CreateWindowEx(xstyle, w_win_class, 0, style,
+                      x, y, width, height, parent, 0,
+                      w_app_instance, pw);
+  /* CreateWindow already causes several calls to w_winproc
+   * (including WM_CREATE) which will not have GWL_USERDATA set
+   * -- WM_CREATE handler fills in and initializes pw */
+  if (hw) {
+    if (hints & P_RGBMODEL) {
+      p_palette(pw, p_595, 225);
+      pw->rgb_mode = 1;
+    }
+    if (!(hints&P_NOKEY)) SetActiveWindow(hw);
+    ShowWindow(hw, (hints&P_NOKEY)? SW_SHOWNA : SW_SHOW);
+  } else {
+    p_destroy(pw);
+    pw = 0;
+  }
+
+  return pw;
 }
 
 p_win *
@@ -73,8 +100,8 @@ p_window(p_scr *s, int width, int height, char *title,
   }
 
   hw = CreateWindowEx(xstyle, w_win_class, parent? 0 : title, style,
-                     CW_USEDEFAULT, 0, width, height, parent, 0,
-                     w_app_instance, pw);
+                      CW_USEDEFAULT, 0, width, height, parent, 0,
+                      w_app_instance, pw);
   /* CreateWindow already causes several calls to w_winproc
    * (including WM_CREATE) which will not have GWL_USERDATA set
    * -- WM_CREATE handler fills in and initializes pw */
@@ -204,7 +231,6 @@ p_menu(p_scr *s, int width, int height, int x, int y,
 {
   p_win *pw = w_pwin(ctx, s, 0, 0, bg);
   HWND hw;
-  HWND parent = 0;
   DWORD xstyle = WS_EX_TOPMOST;
   DWORD style = WS_POPUP | WS_VISIBLE;
 
@@ -212,8 +238,8 @@ p_menu(p_scr *s, int width, int height, int x, int y,
   pw->menu = 1;
 
   hw = CreateWindowEx(xstyle, w_menu_class, 0, style,
-                     x+s->x0, y+s->y0, width, height, w_main_window, 0,
-                     w_app_instance, pw);
+                      x+s->x0, y+s->y0, width, height, w_main_window, 0,
+                      w_app_instance, pw);
   /* see p_window comment */
   if (hw) {
     SetActiveWindow(hw);
@@ -249,11 +275,7 @@ p_metafile(p_win *parent, char *filename,
     r.right = (width * dxmm * 100) / dx;
     r.bottom = (height * dymm * 100) / dy;
 
-#ifdef __CYGWIN__
-    filename = u_pathname(filename);  /* result always in p_wkspc.c */
-#else
     filename = w_pathname(filename);  /* result always in p_wkspc.c */
-#endif
     for (n=0 ; filename[n] ; n++);
     for (i=1 ; i<=4 && i<n ; i++) if (filename[n-i]=='.') break;
     if (i>4) filename[n] = '.', filename[n+1] = 'e', filename[n+2] = 'm',

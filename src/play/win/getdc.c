@@ -1,8 +1,11 @@
 /*
- * getdc.c -- $Id: getdc.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: getdc.c,v 1.1 2005-09-18 22:05:35 dhmunro Exp $
  * get a DC to draw into a window
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"

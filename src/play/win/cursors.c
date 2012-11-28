@@ -1,8 +1,11 @@
 /*
- * cursors.c -- $Id: cursors.c,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * $Id: cursors.c,v 1.1 2005-09-18 22:05:35 dhmunro Exp $
  * p_cursor for MS Windows
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 /* is this really necessary to get OCR_NORMAL?? (==32512) */

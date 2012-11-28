@@ -1,13 +1,12 @@
 /*
- * XBASIC.H
- *
  * $Id: xbasic.h,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Declare the basic play engine for GIST.
- *
  */
-/*    Copyright (c) 2000.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef XBASIC_H
 #define XBASIC_H
@@ -46,24 +45,23 @@ struct XEngine {
   void (*HandleKey)(Engine *e,int k,int md);
 };
 
-/* GxBasic creates the basic top level window for a GpBXEngine.
-   The window manager properties are filled in.
-   Use the DefaultTopSize macro to set the width and
-   height appropriate for a particular resolution (dpi).
-   DefaultTopSize is 6 inches (450 pixels at 75 dpi, 600 at 100 dpi).  */
-extern p_scr *GxBasic(char *name, char *display, int width, int height,
-                      p_win **win);
+PLUG_API p_scr *g_connect(char *displayName);
+PLUG_API void g_disconnect(p_scr *s);
 
-extern p_scr *g_connect(char *displayName);
-extern void g_disconnect(p_scr *s);
-
-extern int gx75width, gx100width;    /* defaults are 450 and 600 pixels */
+PLUG_API int gx75width, gx100width;    /* defaults are 450 and 600 pixels */
 #define DefaultTopWidth(dpi) \
   (gx75width<gx100width?((dpi)*gx100width)/100:gx100width)
-extern int gx75height, gx100height;  /* defaults are 450 and 600 pixels */
+PLUG_API int gx75height, gx100height;  /* defaults are 450 and 600 pixels */
 #define DefaultTopHeight(dpi) \
   (gx75width<gx100width?((dpi)*gx100height)/100:gx100height)
 #define PixelsPerNDC(dpi) ((dpi)/ONE_INCH)
+
+/* hack for p_subwindow communication */
+PLUG_API unsigned long gx_parent;
+PLUG_API int gx_xloc, gx_yloc;
+
+/* Engine which currently has mouse focus. */
+PLUG_API Engine *gxCurrentEngine;
 
 /* GxEngine creates an XEngine and adds it to the list of GIST engines.
    The top window will generally be smaller than the graphics
@@ -71,9 +69,9 @@ extern int gx75height, gx100height;  /* defaults are 450 and 600 pixels */
    scrolling of the graphics window relative to the top window, although
    the initial location is passed in via (x, y).  The size argument is
    sizeof(XEngine), or sizeof some derived engine class.  */
-extern XEngine *GxEngine(p_scr *s, char *name, GpTransform *toPixels,
-                         int x, int y,
-                         int topMargin, int leftMargin, long size);
+PLUG_API XEngine *GxEngine(p_scr *s, char *name, GpTransform *toPixels,
+                           int x, int y,
+                           int topMargin, int leftMargin, long size);
 
 /* GxInput sets optional event handlers, and calls XSelectInput with
    the given eventMask.  HandleExpose, if non-zero, will be called
@@ -83,16 +81,17 @@ extern XEngine *GxEngine(p_scr *s, char *name, GpTransform *toPixels,
    graphics window).  HandleOther, if non-zero, will be called for
    keyboard, button, or other events not recogized by the default
    handler.  */
-extern int GxInput(Engine *engine,
-                   void (*HandleExpose)(Engine *, Drauing *, int *),
-                   void (*HandleClick)(Engine *,int,int,int,int,unsigned long),
-                   void (*HandleMotion)(Engine *,int,int,int),
-                   void (*HandleKey)(Engine *,int,int));
+PLUG_API int GxInput(Engine *engine,
+                     void (*HandleExpose)(Engine *, Drauing *, int *),
+                     void (*HandleClick)(Engine *,
+                                         int, int, int, int, unsigned long),
+                     void (*HandleMotion)(Engine *, int, int, int),
+                     void (*HandleKey)(Engine *, int, int));
 
-extern XEngine *GisXEngine(Engine *engine);
+PLUG_API XEngine *GisXEngine(Engine *engine);
 
-extern void GxExpose(Engine *engine, Drauing *drawing, int *xy);
-extern void GxRecenter(XEngine *xEngine, int width, int height);
+PLUG_API void GxExpose(Engine *engine, Drauing *drawing, int *xy);
+PLUG_API void GxRecenter(XEngine *xEngine, int width, int height);
 
 /* GxAnimate creates an offscreen pixmap for the specified region of
    the window.  Subsequent drawing takes place on the pixmap, not
@@ -101,10 +100,10 @@ extern void GxRecenter(XEngine *xEngine, int width, int height);
    The viewport should be large enough to cover everything that will
    change as the animation proceeds, but no larger to get peak speed.
    GxDirect restores the usual direct-to-screen drawing mode.  */
-extern int GxAnimate(Engine *engine, GpBox *viewport);
-extern int GxStrobe(Engine *engine, int clear);
-extern int GxDirect(Engine *engine);
+PLUG_API int GxAnimate(Engine *engine, GpBox *viewport);
+PLUG_API int GxStrobe(Engine *engine, int clear);
+PLUG_API int GxDirect(Engine *engine);
 
-extern int g_rgb_read(Engine *eng, GpColor *rgb, long *nx, long *ny);
+PLUG_API int g_rgb_read(Engine *eng, GpColor *rgb, long *nx, long *ny);
 
 #endif

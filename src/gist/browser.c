@@ -1,13 +1,12 @@
 /*
- * BROWSER.C
- *
  * $Id: browser.c,v 1.3 2011/03/10 19:07:19 grote Exp $
- *
  * Main for GIST CGM viewer
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include <string.h>
 #include "pstdlib.h"
@@ -20,8 +19,6 @@
 #include "cgmin.h"
 /* GpEPSEngine declared in eps.h */
 #include "eps.h"
-
-extern long strtol(const char *, char **, int);
 
 extern int cgmScaleToFit;
 extern int gtDoEscapes;
@@ -70,8 +67,10 @@ static void DoSpecial(int nPrefix, int cSuffix);
 
 static int xPrefix= 0;
 static int xFrameStep= 10;
+#ifndef NO_XLIB
 static void HandleExpose(Engine *engine, Drauing *drauing, int xy[]);
 static void HandleOther(Engine *engine, int k, int md);
+#endif
 static int HelpAndExit(void);
 static int MessageAndExit(char *msg);
 
@@ -149,6 +148,7 @@ on_launch(int argc, char *argv[])
       else if (strcmp(arg, "b")==0) amBatch= 1;
       else if (strcmp(arg, "nowarn")==0) no_warnings= 1;
       else if (strcmp(arg, "geometry")==0) {
+#ifndef NO_XLIB
         char *suffix;
         int w=0,h=0;
         i++;
@@ -162,6 +162,9 @@ on_launch(int argc, char *argv[])
         if (w < 10 || h < 10) MessageAndExit("Invalid geometry");
         gx75width = gx100width = w;
         gx75height = gx100height = h;
+#else
+        MessageAndExit("-geometry illegal, no interactive graphics");
+#endif
       } else if (strcmp(arg, "75")==0) defaultDPI= 75;
       else if (strcmp(arg, "100")==0) defaultDPI= 100;
       else if (strcmp(arg, "dpi")==0) {
@@ -172,8 +175,10 @@ on_launch(int argc, char *argv[])
         if (defaultDPI > 300) defaultDPI = 300;
       }
       else if (strcmp(arg, "gks")==0) {
+#ifndef NO_XLIB
         gx75width= gx75height= 600;     /* 8x8 X window size */
         gx100width= gx100height= 800;   /* 8x8 X window size */
+#endif
         cgmScaleToFit= 1;               /* 8x8 PostScript plotting area */
         gtDoEscapes= 0;
       } else if (strcmp(arg, "x")==0) x_only= 1;
@@ -238,7 +243,14 @@ on_launch(int argc, char *argv[])
     }
   }
 
+#ifndef NO_XLIB
   g_initializer(&argc, argv);
+#else
+  {
+    extern char *g_argv0;
+    g_argv0 = argv? argv[0] : 0;
+  }
+#endif
 
   return 0;
 }
@@ -636,9 +648,9 @@ static int CreatePS(int device, char *name)
   return 0;
 }
 
-#ifndef NO_XLIB
 static int CreateX(int device, char *name)
 {
+#ifndef NO_XLIB
   if (SaveName(device, name)) return 1;
 
   gist_input_hint = 1;
@@ -657,8 +669,10 @@ static int CreateX(int device, char *name)
   GxInput(outEngines[device], &HandleExpose, 0, 0, &HandleOther);
 
   return 0;
-}
+#else
+  return 1;
 #endif
+}
 
 /* ------------------------------------------------------------------------ */
 
@@ -1146,6 +1160,7 @@ static void DoSpecial(int nPrefix, int cSuffix)
 
 /* ------------------------------------------------------------------------ */
 
+#ifndef NO_XLIB
 /* ARGSUSED */
 static void HandleExpose(Engine *engine, Drauing *drauing, int xy[])
 {
@@ -1235,5 +1250,6 @@ static void HandleOther(Engine *engine, int k, int md)
     xPrefix= 0;
   }
 }
+#endif
 
 /* ------------------------------------------------------------------------ */

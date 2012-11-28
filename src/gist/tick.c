@@ -1,13 +1,12 @@
 /*
- * TICK.C
- *
  * $Id: tick.c,v 1.2 2011/06/28 18:33:05 grote Exp $
- *
  * Implement ticks and labels for GIST coordinate systems
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 /* NOTE-- probably still a few bugs, especially with log scales.
    I wish the log scale coding were cleaner.  The only bug I've

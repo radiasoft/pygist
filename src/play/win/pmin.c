@@ -1,21 +1,20 @@
 /*
- * pmin.c -- $Id: pmin.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: pmin.c,v 1.1 2005-09-18 22:05:38 dhmunro Exp $
  * minimally intrusive play event handling (no stdio)
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"
 #include "pmin.h"
 
-#ifdef __CYGWIN__
-#include <stdio.h>
-#include <sys/select.h>
-#else
 #include <conio.h>
-#endif
 
 static void (*w_abort_hook)(void) = 0;
 static void (*w_exception)(int signal, char *errmsg) = 0;
-static char *w_errmsg = 0;
 static int w_checksig(void);
 
 volatile int p_signalling = 0;
@@ -30,57 +29,27 @@ p_abort(void)
   w_abort_hook();   /* blow up if w_abort_hook == 0 */
 }
 
-#ifdef __CYGWIN__
-/* Cygwin lacks the _kbhit function. Adding it here. */
-
-static int _kbhit(void)
-{
-  fd_set fds;
-  struct timeval tv;
-
-  const int fd = fileno(stdin);
-
-  FD_ZERO (&fds);
-  FD_SET (fd, &fds);
-
-  tv.tv_sec = 0;
-  tv.tv_usec = 0;
-
-  return select(fd+1, &fds, NULL, NULL, &tv) && FD_ISSET(fd, &fds);
-}
-#endif
-
+/* apparently, it is impossible to wait for stdin in Windows
+ * without the cooperation of the code which will actually read stdin
+ * (despite the documentation of MsgWaitForMultipleObjects)
+ * -- if you do control stdin reading code, then need to spawn
+ *    a separate thread to actually read stdin as in conterm.c */
 int
 p_wait_stdin(void)
 {
-  HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
-  const int redirected = (GetFileType(hStdIn)!=FILE_TYPE_CHAR);
   for (;;) {
-    double wait_secs;
-    MSG msg;
-    while (PeekMessage(&msg, 0, 0,0, PM_REMOVE)) {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-      p_on_idle(1);
-    }
-    wait_secs = p_timeout();
-    if (wait_secs==0.0) p_on_idle(0);
-    else {
-      DWORD result;
-      UINT timeout = (wait_secs < 0.0) ? INFINITE : (UINT) (1000.*wait_secs);
-      result = MsgWaitForMultipleObjects(1,
-                                         &hStdIn,
-                                         FALSE,
-                                         timeout,
-                                         QS_ALLINPUT);
-      if (result==WAIT_OBJECT_0) {
-        if (redirected || _kbhit()) return 1;
-        /* Read and discard the event */
-        FlushConsoleInputBuffer(hStdIn);
-      }
-    }
+    p_pending_events();
+    /* poll stdin and drop out if input has arrived
+     * - this will freeze all graphics windows (and all windows events)
+     *   if fgets is called after this, but should work if this routine
+     *   is called back after each individual character arrives
+     *   (as, for example, by readline) */
+    if (_kbhit()) break;
+    /* the point of this routine is to call the play on_idle routine */
+    p_on_idle(0);
+    /* pause 51 milliseconds or until an event arrives */
+    MsgWaitForMultipleObjects(0, 0, 0, 51, QS_ALLINPUT);
   }
-  return 0;
 }
 
 /* does not include stdin, but irrelevant for graphics events */
@@ -103,25 +72,10 @@ p_wait_while(int *flag)
   MSG msg;
   if (!w_checksig()) {
     while (*flag) {
-      double wait_secs = p_timeout();
-      if (wait_secs >= 0.0)
-      { UINT timeout = (UINT)(1000*wait_secs); /* milliseconds */
-        UINT timerid = SetTimer(NULL, 0, timeout, NULL);
-        GetMessage(&msg, 0, 0,0);
-        KillTimer(NULL, timerid);
-        if (msg.message==WM_TIMER)
-        { p_on_idle(0);
-          continue;
-        }
-      }
-      else if(!PeekMessage(&msg, 0, 0,0, PM_REMOVE))
-      { p_on_idle(0);
-        continue;
-      }
+      GetMessage(&msg, 0, 0,0);
       if (msg.message == WM_QUIT) break;
       TranslateMessage(&msg);
       DispatchMessage(&msg);
-      p_on_idle(1);
       if (w_checksig()) break;
     }
   }

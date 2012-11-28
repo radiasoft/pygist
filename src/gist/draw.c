@@ -1,13 +1,12 @@
 /*
- * DRAW.C
- *
  * $Id: draw.c,v 1.2 2010/04/21 00:19:26 dave Exp $
- *
  * Implement display list portion of GIST C interface
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "draw.h"
 #include "gtext.h"

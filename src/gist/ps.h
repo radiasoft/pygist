@@ -1,13 +1,12 @@
 /*
- * PS.H
- *
  * $Id: ps.h,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Declare the PostScript engine for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef PS_H
 #define PS_H
@@ -73,6 +72,6 @@ struct PSEngine {
   int nchars;      /* current number of characters in line */
 };
 
-extern PSEngine *GisPSEngine(Engine *engine);
+PLUG_API PSEngine *GisPSEngine(Engine *engine);
 
 #endif

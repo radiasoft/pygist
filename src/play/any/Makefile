@@ -8,7 +8,7 @@ CCLOAD=$(CC) $(LDOPTIONS) $(LDFLAGS)
 
 OBJS=hash.o hash0.o hashctx.o hashid.o mm.o mminit.o \
   alarms.o pmemcpy.o pstrcpy.o pstrncat.o p595.o \
-  bitrev.o bitlrot.o bitmrot.o
+  bitrev.o bitlrot.o bitmrot.o pstdio.o
 
 all: make.done numfmt
 
@@ -55,6 +55,8 @@ bitrev.o: ../unix/config.h ../play.h
 bitlrot.o: ../unix/config.h ../play.h
 bitmrot.o: ../unix/config.h ../play.h
 p595.o: ../play.h
+
+pstdio.o: ../unix/config.h ../pstdio.h
 
 test2d.o: ../play.h ../pstdlib.h ../pstdio.h
 hashtest.o: ../phash.h ../pstdlib.h ../pstdio.h

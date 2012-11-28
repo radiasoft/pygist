@@ -1,8 +1,11 @@
 /*
- * pscr.c -- $Id: pscr.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: pscr.c,v 1.3 2007-03-19 07:31:30 thiebaut Exp $
  * routines to initialize graphics for MS Windows
- *
- * Copyright (c) 2000.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 /* is this really necessary to get OCR_*?? */
@@ -31,24 +34,6 @@ LPCTSTR w_menu_class = "w_menu_class";
 static char *clip_text = 0;
 static HWND clip_owner = 0;
 static void clip_free(int force);
-
-LONG APIENTRY WndProc ( 
-    HWND         hWnd, 
-    UINT     iMessage, 
-    UINT         wParam, 
-    LONG         lParam) 
-{
-  PAINTSTRUCT ps;
-    switch (iMessage) {
-    case WM_PAINT:
-      BeginPaint(hWnd, &ps);
-      EndPaint(hWnd, &ps);
-      break;
-    default:
-      return DefWindowProc (hWnd, iMessage, wParam, lParam) ; 
-    }
-    return 0;
-}
 
 void (*p_on_connect)(int dis, int fd) = 0;
 
@@ -120,8 +105,7 @@ p_connect(char *server_name)
         int j;
         for (i=0 ; i<15 ; i++) {
           j = GetNearestPaletteIndex(syspal, w_screen.sys_colors[i]);
-          if (j == CLR_INVALID) PALETTEINDEX(0);
-          w_screen.sys_index[i] = PALETTEINDEX(j);
+          w_screen.sys_index[i] = PALETTEINDEX((j==CLR_INVALID)? 0 : j);
         }
         DeleteObject(syspal);
       }
@@ -195,6 +179,15 @@ p_connect(char *server_name)
   return &w_screen;
 }
 
+/* expose MSWindows specific data required to create subwindow */
+HINSTANCE
+w_linker(LPCTSTR *pw_class, WNDPROC *pw_proc)
+{
+  *pw_proc = (WNDPROC)w_winproc;
+  *pw_class = w_win_class;
+  return w_app_instance;
+}
+
 int
 p_sshape(p_scr *s, int *width, int *height)
 {
@@ -250,6 +243,30 @@ p_gui(void (*on_expose)(void *c, int *xy),
   won_click = on_click;
   won_motion = on_motion;
   won_deselect = on_deselect;
+}
+
+/* ARGSUSED */
+void
+p_gui_query(void (**on_expose)(void *c, int *xy),
+	    void (**on_destroy)(void *c),
+	    void (**on_resize)(void *c,int w,int h),
+	    void (**on_focus)(void *c,int in),
+	    void (**on_key)(void *c,int k,int md),
+	    void (**on_click)(void *c,int b,int md,int x,int y,
+			     unsigned long ms),
+	    void (**on_motion)(void *c,int md,int x,int y),
+	    void (**on_deselect)(void *c),
+	    void (**on_panic)(p_scr *s))
+{
+  *on_expose = won_expose;
+  *on_destroy = won_destroy;
+  *on_resize = won_resize;
+  *on_focus = won_focus;
+  *on_key = won_key;
+  *on_click = won_click;
+  *on_motion = won_motion;
+  *on_deselect = won_deselect;
+  *on_panic = 0; /* on_panic not used by Windows interface */
 }
 
 /* ARGSUSED */
@@ -314,6 +331,12 @@ p_raise(p_win *w)
 }
 
 int w_nwins = 0;
+
+int
+p_wincount(p_scr *s)
+{
+  return (s==&w_screen)? w_nwins : 0;
+}
 
 LRESULT CALLBACK
 w_winproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)

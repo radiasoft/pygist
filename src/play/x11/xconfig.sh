@@ -1,4 +1,5 @@
 #! /bin/sh
+# $Id: xconfig.sh,v 1.1 2005-09-18 22:05:34 dhmunro Exp $
 
 debug=no
 
@@ -67,7 +68,23 @@ EOF
   xfound=no
   xinc=
   xlib=
-  if $CC $CFLAGS -c cfg.c >cfg.10a 2>&1; then
+  xl64=
+  if test -n "$X11INC"; then
+    if test -r $d/X11/Xlib.h; then
+      xinc=-I$X11INC
+      if $CC $CFLAGS $xinc -c cfg.c >cfg.10b 2>&1; then
+        xfound=yes
+        xlib=`echo -L$d | sed s/include/lib/`
+        xl64=`echo -L$d | sed s/include/lib64/`
+      else
+        echo "FATAL (play/x11) unable to build with X11 headers in $X11INC"
+        fatality=1
+      fi
+    else
+      echo "FATAL (play/x11) X11/Xlib.h missing from $X11INC"
+      fatality=1
+    fi
+  elif $CC $CFLAGS -c cfg.c >cfg.10a 2>&1; then
     xfound=yes
   else
     for d in $xlist; do
@@ -76,50 +93,48 @@ EOF
         if $CC $CFLAGS $xinc -c cfg.c >cfg.10b 2>&1; then
           xfound=yes
           xlib=`echo -L$d | sed s/include/lib/`
+          xl64=`echo -L$d | sed s/include/lib64/`
           if test $debug = no; then rm -f cfg.10a; fi
         fi
         break
       fi
     done
     if test $xfound = no; then
-      echo "FATAL unable to find X11 includes (play/x11) $xinc"
+      echo "FATAL unable to find X11 includes (play/x11)"
       fatality=1
     fi
   fi
   if test $xfound = yes; then
     args="$CFLAGS $xinc $LDFLAGS -o cfg cfg.c"
-    if $CC $args -lX11 $LIBS >cfg.10c 2>&1; then
+    if test -n "$X11LIB"; then
+      xlib=-L$X11LIB
+      if $CC $args $xlib -lX11 $LIBS >cfg.10c 2>&1; then
+        xfound=both
+      fi
+    elif $CC $args -lX11 $LIBS >cfg.10c 2>&1; then
       xlib=
       xfound=both
     elif test -n "$xlib" && $CC $args $xlib -lX11 $LIBS >cfg.10c 2>&1; then
       xfound=both
+    elif test -n "$xl64" && $CC $args $xl64 -lX11 $LIBS >cfg.10c 2>&1; then
+      xlib="$xl64"
+      xfound=both
     else
-      xlist=`echo $xlist | sed s/include/lib/g`
-      for d in $xlist; do
-        xall=`echo $d/libX11*`
-        if test "$xall" != $d/'libX11*'; then
-          xlib=-L$d
-          if $CC $args $xlib -lX11 $LIBS >cfg.10d 2>&1; then
-            xfound=both
-            if test $debug = no; then rm -f cfg.10c; fi
-          fi
-          break
-        fi
-      done
-      if test $xfound = yes; then
-        xlist=`echo $xlist | sed s/lib/lib64/g`
-        for d in $xlist; do
+      for d0 in $xlist; do
+        for d1 in lib lib64; do
+          d=`echo $d0 | sed s/include/$d1/`
           xall=`echo $d/libX11*`
           if test "$xall" != $d/'libX11*'; then
             xlib=-L$d
             if $CC $args $xlib -lX11 $LIBS >cfg.10d 2>&1; then
               xfound=both
               if test $debug = no; then rm -f cfg.10c; fi
+              break
             fi
-            break
           fi
         done
-      fi
+        if test "$xfound" = both; then break; fi
+      done
     fi
   fi
   if test $xfound = yes; then
@@ -132,6 +147,7 @@ EOF
   fi
   echo "XINC=$xinc" >>../../Make.cfg
   echo "XLIB=$xlib" >>../../Make.cfg
+  echo 'X11LIB=$(XLIB) -lX11' >>../../Make.cfg
 fi
 
 # clean up, issue warning if compiler gave fishy output

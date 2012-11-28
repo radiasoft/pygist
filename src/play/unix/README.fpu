@@ -57,6 +57,27 @@ subsequent floating point instruction.  This is aggravating, but
 apparently not much can be done about it.
 
 
+MacOS X 10.3 (2/Feb/04)
+------------
+
+MacOS X 10.3.0, 10.3.1, and 10.3.2 (at least) shipped with a broken
+libm (/usr/lib/libm.dylib).  The system functions sqrt and tanh cause
+SIGFPE for every argument.  The errors are in Libm-47 in the files
+sqrt.c, shchth.c, and ashachath.c (the latter is inverse hyperbolic
+functions not used by yorick), which perform operations involving
+infinity (FPR_inf) before they switch to a non-trapping floating point
+environment.  The sqrt function in sqrt.c is unused on G5 hardware,
+which selects a hardware fsqrt instruction instead of the sqrt.c code.
+However, on G4 and earlier hardware, the software sqrt in sqrt.c does
+generate incorrect SIGFPEs.  The only easy fix is to use FPU_IGNORE
+instead of FPU_MACOSX, but that will ignore all floating point
+exceptions, which is dangerous in any numerical program.
+
+Earlier versions of setfpu.c did not reset the vx_sqrt bit in the
+fp_scr register, which caused a fault loop on sqrt(any negative
+value); see the comment in fpuset.c.
+
+
 SIGFPE on Linux (18/May/99)
 ---------------
 
@@ -87,12 +108,16 @@ Note that the macros are not always defined -- the alpha has its own
 __setfpucw which translates i386 bits.  In all other cases, when they
 are defined, the bit macros are all different.
 
+More recently, Linux 2.6 kernels apparently cause fputest.c to fail,
+although yorick itself still works.  If you figure out why, please
+contact me at munro1 at llnl.gov.
+
 Alpha Linux
 -----------
 
 Alpha Linux implements the Digital UNIX (now Tru64)
 ieee_set_fp_control() function, although it puts the fpu.h header in a
-different place than Digital (now Compaq).
+different place than Digital (now Compaq now HP).
 
 The alpha hardware cannot handle denormals, infinity, or other IEEE
 constructs.  In particular, denormals cause the hardware to trap.  You
@@ -130,7 +155,7 @@ fails for some reason in full yorick, despite passing the fputest.c
 suite.  When floating point exceptions are masked, IRIX delivers
 SIGTRAP (causing a core dump) on integer divide by zero (gag me with a
 spoon).  When floating point exceptions are being delivered, integer
-divide by zero generates SIGFPE.
+divide by zero generates SIGFPE, but only on 32-bit platforms.
 
 An additional headache is that libm does not generate SIGFPE on
 overflow.  An alternative library libmx is available, but requires a

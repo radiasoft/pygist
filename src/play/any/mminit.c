@@ -1,12 +1,15 @@
 /*
- * mminit.c -- $Id: mminit.c,v 1.1 2009/11/19 23:44:48 dave Exp $
+ * $Id: mminit.c,v 1.1 2005-09-18 22:05:42 dhmunro Exp $
  * basic memory management interface
  *
  * compile this file twice:
  * P_DEBUG not defined makes production version (p_mminit)
  * P_DEBUG defined makes debug version (p_mmdebug)
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "config.h"

@@ -1,8 +1,11 @@
 /*
- * umain.c -- $Id: umain.c,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * $Id: umain.c,v 1.1 2005-09-18 22:05:40 dhmunro Exp $
  * UNIX objects referenced by main.c that goes with play model
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "config.h"
@@ -74,6 +77,7 @@ u_waiter(int wait)
       fault_loop = 1;    /* don't trust u_exception not to fault */
       u_exception(i, u_errmsg);
       serviced_event = 1;
+      fault_loop = 0;
     }
     u_errmsg = 0;
 

@@ -1,11 +1,15 @@
 /*
- * playu.h -- $Id: playu.h,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * $Id: playu.h,v 1.1 2005-09-18 22:05:40 dhmunro Exp $
  * UNIX-private portability layer declarations
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
-#include "extern_c.h"
+#include "plugin.h"
+BEGIN_EXTERN_C
 
 extern void (*u_on_idle)(void);
 
@@ -25,6 +29,10 @@ extern void u_fpu_setup(int when);
  * - callback==0 cancels */
 extern void u_event_src(int fd, void (*callback)(void *), void *context);
 extern void u_prepoll(int (*conditional)(void *), void *context);
+
+/* be sure a child does not have access to known open files */
+extern void u_closeall(void);
+extern void u_fdwatch(int fd, int on);
 
 /* wait at most timeout milliseconds for input on any descriptor
  * for which u_event_src has been called; timeout==-1 means forever

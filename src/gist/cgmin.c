@@ -1,13 +1,12 @@
 /*
- * CGMIN.C
- *
  * $Id: cgmin.c,v 1.2 2011/06/28 18:24:12 grote Exp $
- *
  * Define the CGM reader/echoer for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "play.h"
 #include "cgmin.h"

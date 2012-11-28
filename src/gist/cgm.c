@@ -1,13 +1,12 @@
 /*
- * CGM.C
- *
  * $Id: cgm.c,v 1.2 2011/06/28 18:39:06 grote Exp $
- *
  * Implement the CGM binary metafile engine for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "play.h"
 #include "pstdlib.h"
@@ -18,7 +17,7 @@
 #include <string.h>
 #include <time.h>
 
-static char *cgmType= "binary CGM";
+static g_callbacks g_cgm_on = { "gist CGMEngine", 0, 0, 0, 0, 0, 0, 0, 0 };
 
 #define N_CGMFONTS 20
 
@@ -1437,7 +1436,7 @@ static void IncrementName(char *filename)
 /* ------------------------------------------------------------------------ */
 
 GpReal gCGMScale= 25545.24;   /* default CGM scale is 2400 dpi (round up) */
-long gCGMFileSize= 10000000;  /* default max file size is about 10 Meg */
+long gCGMFileSize= 100000000; /* default max file size is about 100 Meg */
 
 Engine *GpCGMEngine(char *name, int landscape, int mode, char *file)
 {
@@ -1451,7 +1450,7 @@ Engine *GpCGMEngine(char *name, int landscape, int mode, char *file)
   SetCGMTransform(&toPixels, landscape, gCGMScale);
 
   cgmEngine=
-    (CGMEngine *)GpNewEngine(engineSize, name, cgmType, &toPixels, landscape,
+    (CGMEngine *)GpNewEngine(engineSize, name, &g_cgm_on, &toPixels, landscape,
                              &Kill, &Clear, &Flush, &GpComposeMap,
                              &ChangePalette, &DrawLines, &DrawMarkers,
                              &DrwText, &DrawFill, &DrawCells,
@@ -1483,7 +1482,7 @@ Engine *GpCGMEngine(char *name, int landscape, int mode, char *file)
 
 CGMEngine *GisCGMEngine(Engine *engine)
 {
-  return (engine && engine->type==cgmType)? (CGMEngine *)engine : 0;
+  return (engine && engine->on==&g_cgm_on)? (CGMEngine *)engine : 0;
 }
 
 void GcgmSetScale(CGMEngine *cgmEngine, GpReal scale)

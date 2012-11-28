@@ -1,9 +1,15 @@
 /*
- * bitrev.c -- $Id: bitrev.c,v 1.1 2009/11/19 23:44:48 dave Exp $
+ * $Id: bitrev.c,v 1.1 2005-09-18 22:05:44 dhmunro Exp $
  * array of bytes with reversed bits
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
+
+#include "config.h"
+#include "play.h"
 
 unsigned char p_bit_rev[256] = {
   0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,

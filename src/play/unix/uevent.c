@@ -1,8 +1,11 @@
 /*
- * uevent.c -- $Id: uevent.c,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * $Id: uevent.c,v 1.1 2005-09-18 22:05:39 dhmunro Exp $
  * UNIX input event handling
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #ifndef _HPUX_SOURCE
@@ -21,6 +24,8 @@
 
 #ifdef TEST_POLL
 #define p_realloc (void *)realloc
+#define p_malloc (void *)malloc
+void u_fdwatch(int fd, int on) {}
 #endif
 
 /* errno determines if a signal caused premature return from poll */
@@ -76,6 +81,7 @@ u_event_src(int fd, void (*callback)(void *), void *context)
     poll_handler[poll_nfds].callback = callback;
     poll_handler[poll_nfds].context = context;
     poll_nfds++;
+    u_fdwatch(fd, 1);
 
   } else {
     int i;
@@ -138,13 +144,15 @@ u_poll(int timeout)
 
   /* refuse to wait forever with no event sources */
   if (!poll_nfds && timeout<0) return -3;
+  /* work around bug in MacOS 10.3 poll function */
+  if (!poll_fds) poll_fds = p_malloc(sizeof(struct pollfd));
 
   /* check for any events which arrived on previous poll before
    * calling poll again -- assures that first fd in poll_fds cannot
    * prevent any other fd from being serviced */
   do {
     for (i=0 ; i<poll_nfds ; i++)
-      if (poll_fds[i].revents & (POLLIN|POLLPRI|POLLERR|POLLHUP)) {
+      if (poll_fds[i].revents & (POLLIN|POLLPRI|POLLERR|POLLHUP|POLLNVAL)) {
         poll_fds[i].revents = 0;
         poll_handler[i].callback(poll_handler[i].context);
         return 1;

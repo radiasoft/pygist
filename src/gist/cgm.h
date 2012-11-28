@@ -1,13 +1,12 @@
 /*
- * CGM.H
- *
  * $Id: cgm.h,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Declare the CGM binary metafile engine for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef CGM_H
 #define CGM_H
@@ -83,17 +82,17 @@ struct CGMEngine {
   GpReal curEwidth;
 };
 
-extern CGMEngine *GisCGMEngine(Engine *engine);
+PLUG_API CGMEngine *GisCGMEngine(Engine *engine);
 
 /* Default CGM scale factor and maximum file size */
-extern GpReal gCGMScale;
-extern long gCGMFileSize;
+PLUG_API GpReal gCGMScale;
+PLUG_API long gCGMFileSize;
 
 /* To change away from the default fileSize, just change the
    CGMEngine fileSize member.  To change the CGM scale factor
    (the initial default value is 25545.2, which corresponds to
    2400 dpi resolution), use GcgmSetScale after creating the
    engine but BEFORE DRAWING ANYTHING WITH IT: */
-extern void GcgmSetScale(CGMEngine *cgmEngine, GpReal scale);
+PLUG_API void GcgmSetScale(CGMEngine *cgmEngine, GpReal scale);
 
 #endif

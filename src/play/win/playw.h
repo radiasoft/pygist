@@ -1,15 +1,14 @@
 /*
- * playw.h -- $Id: playw.h,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: playw.h,v 1.2 2010-07-19 07:39:13 thiebaut Exp $
  * MS Windows-private portability layer declarations
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
-#include "play.h"
-
-#ifndef __AFX_H__
-#include <windows.h>
-#endif
+#include "playwin.h"
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -41,11 +40,12 @@ extern int w_no_mdi;
 extern int con_stdinit(void(**)(char*,long), void(**)(char*,long));
 extern int (*w_stdinit)(void (**wout)(char*,long),
                         void (**werr)(char*,long));
+extern void con_stdout(char *output_line, long len);
+extern void con_stderr(char *output_line, long len);
 extern void w_deliver(char *buf);   /* calls on_stdin */
 extern char *w_sendbuf(long len);
 
 extern int w_nwins;  /* count of graphics windows */
-extern int w_nputs;  /* count of w_add_input input sources */
 
 extern HINSTANCE w_app_instance;
 extern HWND w_main_window;
@@ -60,67 +60,6 @@ extern char *w_unixpath(const char *wname);
 extern void (*w_abort_hook)(void);
 
 /* ------------------------------------------------------------------------ */
-
-#define W_FONTS_CACHED 6
-
-struct p_scr {
-  int width, height, depth;
-  int x0, y0;                  /* usable area may not start at (0,0) */
-  int does_linetypes;          /* Win9x can't do dashed lines */
-  int does_rotext;             /* may not be able to rotate text */
-
-  COLORREF sys_colors[15], sys_index[15];
-  PALETTEENTRY *sys_pal;
-  int sys_offset;
-
-  HFONT gui_font;
-  int font_order[W_FONTS_CACHED];  /* indices into font_cache */
-  struct {
-    HFONT hfont;
-    int font, pixsize, orient;
-  } font_cache[W_FONTS_CACHED];
-  p_win *font_win;             /* most recent window that called p_font */
-
-  HCURSOR cursors[P_NONE];
-
-  p_win *first_menu;
-  p_win *active;               /* last p_win which set foreground palette */
-};
-
-struct p_win {
-  void *ctx;
-  p_scr *s;
-
-  HDC dc;
-  HWND w;
-  HBITMAP bm;
-  int menu;
-
-  p_win *parent;
-  HCURSOR cursor;
-  HPALETTE palette;
-
-  /* DC keeps three separate colors, only set when actually used */
-  COLORREF *pixels;
-  int n_pixels, rgb_mode;
-  unsigned long color;       /* pending color */
-
-  int pbflag;                /* 1 set if null brush installed in dc
-                              * 2 set if null pen installed in dc */
-  HBRUSH brush;              /* brush to be installed in dc */
-  unsigned long brush_color; /* actual color of brush */
-  HPEN pen;                  /* pen to be installed in dc */
-  unsigned long pen_color;   /* actual color of pen */
-  int pen_width, pen_type;   /* pending pen width and type */
-
-  unsigned long font_color;  /* actual color of current font */
-  int font, pixsize, orient;
-
-  unsigned long bg;          /* for p_clear */
-
-  unsigned long keydown;     /* required to interpret WM_CHAR */
-  HWND ancestor;             /* p_destroy or p_resize communication */
-};
 
 extern p_scr w_screen;
 extern HCURSOR w_cursor(int cursor);

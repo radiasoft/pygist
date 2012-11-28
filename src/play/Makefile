@@ -2,7 +2,7 @@ SHELL=/bin/sh
 MAKE=make
 include ../Make.cfg
 
-SUBDIRS=unix x11 all
+SUBDIRS=unix x11 any
 
 all: libyor
 
@@ -21,10 +21,10 @@ config:
 	cd x11; $(MAKE) config
 
 numfmt: libyor
-	cd all; $(MAKE) numfmt
+	cd any; $(MAKE) numfmt
 
 test2d: libyor
-	cd all; $(MAKE) test2d
+	cd any; $(MAKE) test2d
 
 clean:: cleantop
 	@for dir in $(SUBDIRS); do ( cd $$dir; $(MAKE) clean; ); done

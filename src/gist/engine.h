@@ -1,13 +1,12 @@
 /*
- * ENGINE.H
- *
  * $Id: engine.h,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Declare common properties of all GIST engines
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef ENGINE_H
 #define ENGINE_H
@@ -17,10 +16,10 @@
 /* ------------------------------------------------------------------------ */
 
 struct Engine {
+  g_callbacks *on;
   Engine *next;
   Engine *nextActive;
   char *name;
-  char *type;    /* same for every instance of a given Engine type */
 
   int active;
   int marked;    /* set if any marks have been made on current page */
@@ -86,12 +85,12 @@ struct Engine {
 };
 
 /* Linked lists of all engines and of all active engines */
-extern Engine *gistEngines;
-extern Engine *gistActive;
+PLUG_API Engine *gistEngines;
+PLUG_API Engine *gistActive;
 
 /* Generic Engine constructor and destructor */
-extern Engine *GpNewEngine(long size, char *name, char *type,
-                           GpTransform *transform, int landscape,
+PLUG_API Engine *GpNewEngine(long size, char *name, g_callbacks *on,
+                             GpTransform *transform, int landscape,
   void (*Kill)(Engine*), int (*Clear)(Engine*,int), int (*Flush)(Engine*),
   void (*ChangeMap)(Engine*), int (*ChangePalette)(Engine*),
   int (*DrawLines)(Engine*,long,const GpReal*,const GpReal*,int,int),
@@ -102,17 +101,17 @@ extern Engine *GpNewEngine(long size, char *name, char *type,
                    long,long,long,const GpColor*),
   int (*DrawDisjoint)(Engine*,long,const GpReal*,const GpReal*,
                       const GpReal*,const GpReal*));
-extern void GpDelEngine(Engine *engine);
+PLUG_API void GpDelEngine(Engine *engine);
 
 /* ------------------------------------------------------------------------ */
 /* Coordinate mapping */
 
 /* Set engine->devMap from engine->transform */
-extern void GpDeviceMap(Engine *engine);
+PLUG_API void GpDeviceMap(Engine *engine);
 
 /* Compose WC->VDC engine->map coefficients given gistT (WC->NDC) and
    engine->devMap (NDC->VDC).  */
-extern void GpComposeMap(Engine *engine);
+PLUG_API void GpComposeMap(Engine *engine);
 
 /* The X window, CGM, and PostScript devices can all be based on
    integer coordinate systems using points and segments which are
@@ -130,13 +129,13 @@ struct GpSegment {  /* same as X windows XSegment */
 };
 
 /* Returns number of points processed this pass (<=maxPoints) */
-extern long GpIntPoints(const GpXYMap *map, long maxPoints, long n,
-                        const GpReal *x, const GpReal *y, GpPoint **result);
+PLUG_API long GpIntPoints(const GpXYMap *map, long maxPoints, long n,
+                          const GpReal *x, const GpReal *y, GpPoint **result);
 
 /* Returns number of segments processed this pass (<=maxSegs) */
-extern long GpIntSegs(const GpXYMap *map, long maxSegs, long n,
-                      const GpReal *x1, const GpReal *y1,
-                      const GpReal *x2, const GpReal *y2, GpSegment **result);
+PLUG_API long GpIntSegs(const GpXYMap *map, long maxSegs, long n,
+                        const GpReal *x1, const GpReal *y1,
+                        const GpReal *x2, const GpReal *y2,GpSegment **result);
 
 /* ------------------------------------------------------------------------ */
 
@@ -144,15 +143,15 @@ extern long GpIntSegs(const GpXYMap *map, long maxSegs, long n,
    (1) A device has no polymarker primitive, or
    (2) You want the marker to be a character (used by GaLines)   */
 /* Note: GpPseudoMark is defined in gist.c to share static functions.  */
-extern int GpPseudoMark(Engine *engine, long n,
-                        const GpReal *px, const GpReal *py);
+PLUG_API int GpPseudoMark(Engine *engine, long n,
+                          const GpReal *px, const GpReal *py);
 
 /* Routine to clip cell array (one axis at a time) */
-extern long GpClipCells(GpMap *map, GpReal *px, GpReal *qx,
-                        GpReal xmin, GpReal xmax, long ncells, long *off);
+PLUG_API long GpClipCells(GpMap *map, GpReal *px, GpReal *qx,
+                          GpReal xmin, GpReal xmax, long ncells, long *off);
 
 /* Raw routine to inflict damage */
-extern void GpDamage(Engine *eng, Drauing *drawing, GpBox *box);
+PLUG_API void GpDamage(Engine *eng, Drauing *drawing, GpBox *box);
 
 /* ------------------------------------------------------------------------ */
 

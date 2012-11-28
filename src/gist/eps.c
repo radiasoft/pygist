@@ -1,13 +1,12 @@
 /*
- * EPS.C
- *
  * $Id: eps.c,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Define the Encapsulated PostScript pseudo-engine for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include <string.h>
 #include <stdio.h>
@@ -22,7 +21,8 @@
 #define PS_PER_POINT 20
 #define PS_TO_NDC (ONE_POINT/20.0)
 
-static char epsType[]= "EPS Pseudo-engine";
+static g_callbacks g_eps_on = { "gist EPS pseudo-engine",
+                                0, 0, 0, 0, 0, 0, 0, 0 };
 
 static p_file *psFile= 0, *epsFile= 0;
 static unsigned char *epsPreview= 0;
@@ -723,7 +723,7 @@ Engine *EPSPreview(Engine *engine, char *file)
   }
 
   /* Create the EPS Engine */
-  engine= GpNewEngine(sizeof(Engine), "Gist EPS", epsType, &toPixels, 0,
+  engine= GpNewEngine(sizeof(Engine), "Gist EPS", &g_eps_on, &toPixels, 0,
                       &Kill, &Clear, &Flush, &GpComposeMap,
                       &ChangePalette, &DrawLines, &GpPseudoMark,
                       &DrwText, &DrawFill, &DrawCells,

@@ -1,8 +1,11 @@
 /*
- * sigansi.c -- $Id: sigansi.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: sigansi.c,v 1.1 2005-09-18 22:05:38 dhmunro Exp $
  * signal handing using POSIX/ANSI signals (GNU/cygwin)
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"

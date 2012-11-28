@@ -1,13 +1,12 @@
 /*
- * HLEVEL.H
- *
  * $Id: hlevel.h,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Declare routines for recommended GIST interactive interface
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef HLEVEL_H
 #define HLEVEL_H
@@ -16,11 +15,11 @@
 
 /* See README for description of these control functions */
 
-extern void GhBeforeWait(void);
-extern void GhFMA(void);
-extern void GhRedraw(void);
-extern void GhHCP(void);
-extern void GhFMAMode(int hcp, int animate); /* 0 off, 1 on, 2 nc, 3 toggle */
+PLUG_API void GhBeforeWait(void);
+PLUG_API void GhFMA(void);
+PLUG_API void GhRedraw(void);
+PLUG_API void GhHCP(void);
+PLUG_API void GhFMAMode(int hcp, int animate); /* 0 off, 1 on, 2 nc, 3 toggle*/
 
 /* The pldevice call should create the necessary engines, and set their
    Engine pointers in ghDevices, then call GhSetPlotter to set the
@@ -38,32 +37,34 @@ struct GhDevice {
   void *hook;
 };
 
-/* Allow up to 8 windows per application */
-extern GhDevice ghDevices[8];
+/* Allow up to GH_NDEVS windows per application */
+#ifndef GH_NDEVS
+# define GH_NDEVS 64
+#endif
+PLUG_API GhDevice ghDevices[GH_NDEVS];
 
-extern int GhSetPlotter(int number);
-extern int GhGetPlotter(void);
+PLUG_API int GhSetPlotter(int number);
+PLUG_API int GhGetPlotter(void);
 
 /* The default hardcopy device is used for hcp commands whenever the
    current device has no hcp engine of its own.  */
-extern Engine *hcpDefault;
+PLUG_API Engine *hcpDefault;
 
-extern void GhDumpColors(int n, int hcp, int pryvate);
-extern int GhGetColorMode(Engine *engine);
-extern void GhSetPalette(int n, GpColorCell *palette, int nColors);
-extern int GhReadPalette(int n, const char *gpFile,
-                         GpColorCell **palette, int maxColors);
-extern int GhGetPalette(int n, GpColorCell **palette);
-extern int GhGetColorMode(Engine *engine);
-extern void SetHCPPalette(void);
-extern void GhDeletePalette(int n);
+PLUG_API void GhDumpColors(int n, int hcp, int pryvate);
+PLUG_API void GhSetPalette(int n, GpColorCell *palette, int nColors);
+PLUG_API int GhReadPalette(int n, const char *gpFile,
+                           GpColorCell **palette, int maxColors);
+PLUG_API int GhGetPalette(int n, GpColorCell **palette);
+PLUG_API int GhGetColorMode(Engine *engine);
+PLUG_API void SetHCPPalette(void);
+PLUG_API void GhDeletePalette(int n);
 
 /* A high-level error handler takes down an X-window before calling
    the user-installed error handler.  This prevents a huge blast of
    errors when a window is detroyed bby a window manager (for example),
    but is obviously a litle more fragile than a smart error handler
    could be.  */
-extern int GhSetXHandler(void (*XHandler)(char *msg));
+PLUG_API int GhSetXHandler(void (*XHandler)(char *msg));
 
 /* For each of the D level drawing primitives, a set of
    default parameter settings is maintained, and can be installed
@@ -71,22 +72,22 @@ extern int GhSetXHandler(void (*XHandler)(char *msg));
    defaults themselves.  GdCells does not use any attributes,
    and GdContours uses the same attributes as GdLines.
    GdFillMesh uses line attributes for edges (if any).  */
-extern void GhGetLines(void);
-extern void GhGetText(void);
-extern void GhGetMesh(void);
-extern void GhGetVectors(void);
-extern void GhGetFill(void);
+PLUG_API void GhGetLines(void);
+PLUG_API void GhGetText(void);
+PLUG_API void GhGetMesh(void);
+PLUG_API void GhGetVectors(void);
+PLUG_API void GhGetFill(void);
 
-extern void GhSetLines(void);
-extern void GhSetText(void);
-extern void GhSetMesh(void);
-extern void GhSetVectors(void);
-extern void GhSetFill(void);
+PLUG_API void GhSetLines(void);
+PLUG_API void GhSetText(void);
+PLUG_API void GhSetMesh(void);
+PLUG_API void GhSetVectors(void);
+PLUG_API void GhSetFill(void);
 
 /* The GpFXEngine (fancy X engine) has controls for the zoom factor
    and a function for initiating a point-and-click sequence.  */
 
-extern GpReal gxZoomFactor;   /* should be >1.0, default is 1.5 */
+PLUG2_API GpReal gxZoomFactor;   /* should be >1.0, default is 1.5 */
 
 /* The GxPointClick function initiates an interactive point-and-click
    session with the window -- it will not return until a button has
@@ -112,12 +113,24 @@ extern GpReal gxZoomFactor;   /* should be >1.0, default is 1.5 */
                               1 shift, 2 lock, 4 control, 8 - 128 mod1-5
                    xn, yn  -- NDC coordinates of pointer
  */
-extern int GxPointClick(Engine *engine, int style, int system,
-                        int (*CallBack)(Engine *engine, int system,
-                                        int release, GpReal x, GpReal y,
-                                        int butmod, GpReal xn, GpReal yn));
+PLUG2_API int GxPointClick(Engine *engine, int style, int system,
+                           int (*CallBack)(Engine *engine, int system,
+                                           int release, GpReal x, GpReal y,
+                                           int butmod, GpReal xn, GpReal yn));
 
-extern int gist_expose_wait(Engine *eng, void (*e_callback)(void));
-extern int g_rgb_read(Engine *eng, GpColor *rgb, long *nx, long *ny);
+/* Variables to store engine which currently has mouse focus and
+   coordinate system and mouse coordinates after last mouse motion. */
+PLUG2_API Engine *gxCurrentEngine;
+PLUG2_API int gxCurrentSys;
+PLUG2_API GpReal gxCurrentX, gxCurrentY;
+
+/* The GhGetMouse function stores the current coordinate system and
+   mouse position at SYS, X and Y repectively (any of them can be
+   NULL) and returns the device number which has the mouse focus.
+   If no device currently has the focus, -1 is returned. */
+PLUG_API int GhGetMouse(int *sys, double *x, double *y);
+
+PLUG2_API int g_rgb_read(Engine *eng, GpColor *rgb, long *nx, long *ny);
+PLUG_API void (*g_on_idle)(void);
 
 #endif

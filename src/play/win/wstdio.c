@@ -1,8 +1,11 @@
 /*
- * wstdio.c -- $Id: wstdio.c,v 1.1 2009/11/19 23:44:50 dave Exp $
+ * $Id: wstdio.c,v 1.1 2005-09-18 22:05:38 dhmunro Exp $
  * p_stdinit, p_stdout, p_stdin for MS Windows
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "playw.h"
@@ -37,11 +40,13 @@ p_stdinit(void (*on_stdin)(char *input_line))
 
 void p_stdout(char *output_line)
 {
+  if (!w_stdout) w_stdout = con_stdout;
   w_formout(output_line, w_stdout);
 }
 
 void p_stderr(char *output_line)
 {
+  if (!w_stderr) w_stderr = con_stderr;
   w_formout(output_line, w_stderr);
 }
 

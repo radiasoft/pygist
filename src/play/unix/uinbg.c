@@ -1,13 +1,17 @@
 /*
- * uinbg.c -- $Id: uinbg.c,v 1.1 2009/11/19 23:44:49 dave Exp $
+ * $Id: uinbg.c,v 1.1 2005-09-18 22:05:40 dhmunro Exp $
  * foreground/background detection function (UNIX arcana)
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "config.h"
 #include "playu.h"
 
+#ifndef NO_PROCS
 #ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE 1
 #endif
@@ -29,10 +33,12 @@ extern pid_t getpgrp(void);
 #define USE_POSIX_GETPGRP 0
 extern pid_t getpgrp(pid_t);
 #endif
+#endif
 
 int
 u_in_background(void)
 {
+#ifndef NO_PROCS
   /* if the process group of the controlling terminal for stdin (fd 0)
    *   does not match our process group, we are in the background, and
    *   any attempt to read stdin will generate a SIGTTIN signal
@@ -43,6 +49,7 @@ u_in_background(void)
     pid_t pgid = getpgrp(USE_POSIX_GETPGRP);   /* get our process group */
     return (pgid!=tgid);
   }
+#endif
   return 0;
 }
 

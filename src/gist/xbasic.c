@@ -1,17 +1,12 @@
 /*
- * XBASIC.C
- *
  * $Id: xbasic.c,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Implement the basic X windows engine for GIST.
- *  
- * CHANGES:
- * 12/06/04 mdh Correct bug: Do not set xeng->w in Kill because xeng has 
- *              already been freed.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "xbasic.h"
 #include "gtext.h"
@@ -19,7 +14,19 @@
 
 #include <string.h>
 
-static char *xType= "PLAY Window";
+static void g_on_expose(void *c, int *xy);
+static void g_on_destroy(void *c);
+static void g_on_resize(void *c,int w,int h);
+static void g_on_focus(void *c,int in);
+static void g_on_key(void *c,int k,int md);
+static void g_on_click(void *c,int b,int md,int x,int y, unsigned long ms);
+static void g_on_motion(void *c,int md,int x,int y);
+static void g_on_deselect(void *c);
+static void g_on_panic(p_scr *screen);
+
+static g_callbacks g_x_on = {
+  "gist XEngine", g_on_expose, g_on_destroy, g_on_resize, g_on_focus,
+  g_on_key, g_on_click, g_on_motion, g_on_deselect };
 
 static int ChangePalette(Engine *engine);
 static GpReal TextWidth(const char *text, int nc, const GpTextAttribs *t);
@@ -64,6 +71,11 @@ extern int GxJustifyNext(const char **text, int *ix, int *iy);
 
 static int gxErrorFlag= 0;
 static void GxErrorHandler(void);
+
+/* Engine which currently has mouse focus (set to NULL when the
+   "current" engine get destroyed or when mouse leaves the "current"
+   engine window, set to engine address on mouse motion). */
+Engine *gxCurrentEngine = NULL;
 
 /* ------------------------------------------------------------------------ */
 
@@ -434,17 +446,11 @@ GxJustifyNext(const char **text, int *ix, int *iy)
  *       the g_on_destroy() in the event-driven case
  *       -- thus, the p_disconnect must take place on the next
  *          event, which is during the GhBeforeWait hlevel.c function
- *       -- unfortunately, in the meantime, a new window could
- *          have been created on that screen,
- *          hence the g_test_pending() routine
- *       -- the mess is further compounded by the fact that there
- *          could be an unlimited number of different screens with
- *          pending disconnections, after the 4th one, the current
- *          code simply gives up and forgets about disconnecting
  */
+/* hack to disconnect if last engine destroyed (see GhBeforeWait) */
+static void g_do_disconnect(void);
 extern void (*g_pending_task)(void);
 void (*g_pending_task)(void) = 0;
-static void g_test_pending(p_scr *s);
 
 static void
 Kill(Engine *engine)
@@ -452,11 +458,9 @@ Kill(Engine *engine)
   XEngine *xeng= (XEngine *)engine;
   p_win *w = xeng->win;
   ShutDown(xeng);
-  if (w) {
-    p_destroy(w);
-  }
+  if (w) p_destroy(w);
   /* for program-driven Kill(), can take care of p_disconnect immediately */
-  if (g_pending_task) g_pending_task();
+  g_do_disconnect();
 }
 
 static int
@@ -626,9 +630,18 @@ ChangeMap(Engine *engine)
       if (y0 < tm) y0 = tm;
       if (y1 > tm+xeng->htop) y1 = tm+xeng->htop;
       xeng->clipping = 1;
+    } else {
+      if (x0 < 0) x0 = 0;
+      if (x1 > xeng->a_width) x1 = xeng->a_width;
+      if (y0 < 0) y0 = 0;
+      if (y1 > xeng->a_height) y1 = xeng->a_height;
+      if (x0==0 && x1==xeng->a_width && y0==0 && y1==xeng->a_height)
+        x0 = x1 = y0 = y1 = 0;
     }
-    if (x1<=x0) x1 = x0+1;
-    if (y1<=y0) y1 = y0+1;
+    if (x0 || x1 || y0 || y1) {
+      if (x1<=x0) x1 = x0+1;
+      if (y1<=y0) y1 = y0+1;
+    }
     p_clip(xeng->w, x0, y0, x1, y1);
   }
 }
@@ -663,7 +676,7 @@ chk_clipping(XEngine *xeng)
     xeng->clipping = 1;
     if (x1<=x0) x1 = x0+1;
     if (y1<=y0) y1 = y0+1;
-    p_clip(xeng->w, x0, y0, x1, y1);
+    p_clip(w, x0, y0, x1, y1);
   }
 }
 
@@ -1033,37 +1046,8 @@ DrawDisjoint(Engine *engine, long n, const GpReal *px,
 
 /* ------------------------------------------------------------------------ */
 
-extern int (*gg_on_expose)(void *c, int *xy);
-extern int (*gg_on_destroy)(void *c);
-extern int (*gg_on_resize)(void *c,int w,int h);
-extern int (*gg_on_focus)(void *c,int in);
-extern int (*gg_on_key)(void *c,int k,int md);
-extern int (*gg_on_click)(void *c,int b,int md,int x,int y, unsigned long ms);
-extern int (*gg_on_motion)(void *c,int md,int x,int y);
-extern int (*gg_on_deselect)(void *c);
-int (*gg_on_expose)(void *c, int *xy) = 0;
-int (*gg_on_destroy)(void *c) = 0;
-int (*gg_on_resize)(void *c,int w,int h) = 0;
-int (*gg_on_focus)(void *c,int in) = 0;
-int (*gg_on_key)(void *c,int k,int md);
-int (*gg_on_click)(void *c,int b,int md,int x,int y, unsigned long ms) = 0;
-int (*gg_on_motion)(void *c,int md,int x,int y) = 0;
-int (*gg_on_deselect)(void *c) = 0;
-
-static void g_on_expose(void *c, int *xy);
-static void g_on_destroy(void *c);
-static void g_on_resize(void *c,int w,int h);
-static void g_on_focus(void *c,int in);
-static void g_on_key(void *c,int k,int md);
-static void g_on_click(void *c,int b,int md,int x,int y, unsigned long ms);
-static void g_on_motion(void *c,int md,int x,int y);
-static void g_on_deselect(void *c);
-static void g_on_panic(p_scr *screen);
-
 static Engine *waiting_for = 0;
 static void (*wait_callback)(void) = 0;
-
-extern int gist_expose_wait(Engine *eng, void (*e_callback)(void));
 
 int
 gist_expose_wait(Engine *eng, void (*e_callback)(void))
@@ -1085,8 +1069,8 @@ gist_expose_wait(Engine *eng, void (*e_callback)(void))
 static void
 g_on_expose(void *c, int *xy)
 {
-  if (!gg_on_expose || gg_on_expose(c,xy)) {
-    XEngine *xeng = c;
+  XEngine *xeng = c;
+  if (xeng->e.on==&g_x_on) {
     if (c && c == waiting_for) {
       waiting_for = 0;
       if (wait_callback) wait_callback();
@@ -1099,73 +1083,92 @@ g_on_expose(void *c, int *xy)
       xeng->HandleExpose(&xeng->e, xeng->e.drawing, xy);
     else
       GxExpose(&xeng->e, xeng->e.drawing, xy);
+  } else if (xeng->e.on && xeng->e.on->expose) {
+    xeng->e.on->expose(c, xy);
   }
 }
 
 static void
 g_on_click(void *c,int b,int md,int x,int y, unsigned long ms)
 {
-  if (!gg_on_click || gg_on_click(c,b,md,x,y,ms)) {
-    XEngine *xeng = c;
+  XEngine *xeng = c;
+  if (xeng->e.on==&g_x_on) {
     if (!xeng->w) return;
     if (xeng->HandleClick)
       xeng->HandleClick(&xeng->e, b, md, x, y, ms);
+  } else if (xeng->e.on && xeng->e.on->click) {
+    xeng->e.on->click(c, b, md, x, y, ms);
   }
 }
 
 static void
 g_on_motion(void *c,int md,int x,int y)
 {
-  if (!gg_on_motion || gg_on_motion(c,md,x,y)) {
-    XEngine *xeng = c;
+  XEngine *xeng = c;
+  gxCurrentEngine = (Engine *)c;
+  if (xeng->e.on==&g_x_on) {
     if (!xeng->w) return;
     if (xeng->HandleMotion)
       xeng->HandleMotion(&xeng->e, md, x, y);
+  } else if (xeng->e.on && xeng->e.on->motion) {
+    xeng->e.on->motion(c, md, x, y);
   }
 }
 
 static void
 g_on_destroy(void *c)
 {
-  if (!gg_on_destroy || gg_on_destroy(c)) {
-    XEngine *xeng = c;
+  XEngine *xeng = c;
+  if (xeng->e.on==&g_x_on) {
     /* if xeng->win==0, assume ShutDown already called */
     if (xeng->win) ShutDown(xeng);
+  } else if (xeng->e.on && xeng->e.on->destroy) {
+    xeng->e.on->destroy(c);
   }
 }
 
 static void
 g_on_resize(void *c,int w,int h)
 {
-  if (!gg_on_resize || gg_on_resize(c,w,h)) {
-    XEngine *xeng = c;
+  XEngine *xeng = c;
+  if (xeng->e.on==&g_x_on) {
     if (xeng->w) GxRecenter(xeng, w, h);
+  } else if (xeng->e.on && xeng->e.on->resize) {
+    xeng->e.on->resize(c, w, h);
   }
 }
 
 static void
 g_on_focus(void *c,int in)
 {
-  if (!gg_on_focus || gg_on_focus(c,in)) {
-    XEngine *xeng = c;
+  XEngine *xeng = c;
+  if (in == 2) gxCurrentEngine = NULL; /* current window has lost mouse focus */
+  if (xeng->e.on==&g_x_on) {
     if (xeng->w && xeng->HandleMotion && in==2)
       xeng->HandleMotion(&xeng->e, 0, -1, -1);
+  } else if (xeng->e.on && xeng->e.on->focus) {
+    xeng->e.on->focus(c, in);
   }
 }
 
 static void
 g_on_key(void *c,int k,int md)
 {
-  if (!gg_on_key || gg_on_key(c,k,md)) {
-    XEngine *xeng = c;
+  XEngine *xeng = c;
+  if (xeng->e.on==&g_x_on) {
     if (xeng->w && xeng->HandleKey)
       xeng->HandleKey(&xeng->e, k, md);
+  } else if (xeng->e.on && xeng->e.on->key) {
+    xeng->e.on->key(c, k , md);
   }
 }
 
 static void g_on_deselect(void *c)
 {
-  if (!gg_on_deselect || gg_on_deselect(c)) {
+  XEngine *xeng = c;
+  if (xeng->e.on==&g_x_on) {
+  } else if (xeng->e.on && xeng->e.on->deselect) {
+    xeng->e.on->deselect(c);
   }
 }
 
@@ -1301,7 +1304,6 @@ g_connect(char *displayName)
     if (i0<0) s = p_connect(displayName);
     else s = p_multihead(g_screens[i0].s, number);
     if (!s) return s;
-    g_test_pending(s);
     for (i=0 ; i<n_screens ; i++) if (!g_screens[i].s) break;
     if (i==n_screens && !(i & (i-1))) {
       int n = i? 2*i : 1;
@@ -1322,17 +1324,17 @@ g_disconnect(p_scr *s)
   if (s) {
     int i;
     char *name;
-    if (g_screens) {
-      for (i=0 ; i<n_screens ; i++) {
-        if (g_screens[i].s == s) {
-          name = g_screens[i].name;
-          g_screens[i].name = 0;
-          g_screens[i].s = 0;
-          p_free(name);
-        }
+    for (i=0 ; i<n_screens ; i++) {
+      if (g_screens[i].s == s) {
+        name = g_screens[i].name;
+        g_screens[i].name = 0;
+        g_screens[i].s = 0;
+        p_free(name);
       }
     }
     p_disconnect(s);
+  } else {
+    g_do_disconnect();
   }
 }
 
@@ -1368,7 +1370,7 @@ GxEngine(p_scr *s, char *name, GpTransform *toPixels,
   gx_translate(&toPixels->window, x+leftMargin, y+topMargin);
 
   xEngine =
-    (XEngine *)GpNewEngine(engineSize, name, xType, toPixels, width>height,
+    (XEngine *)GpNewEngine(engineSize, name, &g_x_on, toPixels, width>height,
                            &Kill, &Clear, &Flush, &ChangeMap,
                            &ChangePalette, &DrawLines, &DrawMarkers,
                            &DrwText, &DrawFill, &DrawCells,
@@ -1414,6 +1416,9 @@ int gx100width = 600;
 int gx75height = 450;
 int gx100height = 600;
 
+unsigned long gx_parent = 0;
+int gx_xloc=0, gx_yloc=0;
+
 int gist_private_map = 0;
 int gist_input_hint = 0;
 int gist_rgb_hint = 0;
@@ -1445,8 +1450,11 @@ GpBXEngine(char *name, int landscape, int dpi, char *displayName)
   /* possibly want optional P_RGBMODEL as well */
   hints = (gist_private_map?P_PRIVMAP:0) | (gist_input_hint?0:P_NOKEY) |
     (gist_rgb_hint?P_RGBMODEL:0);
-  xeng->win = xeng->w =
+  xeng->win = xeng->w = gx_parent?
+    p_subwindow(s, topWidth, topHeight,
+                gx_parent, gx_xloc, gx_yloc, P_BG, hints, xeng) :
     p_window(s, topWidth, topHeight, name, P_BG, hints, xeng);
+  gx_parent = 0;
   if (!xeng->win) {
     GpDelEngine(&xeng->e);
     return 0;
@@ -1474,7 +1482,7 @@ GxInput(Engine *engine,
 XEngine *
 GisXEngine(Engine *engine)
 {
-  return (engine && engine->type==xType)? (XEngine *)engine : 0;
+  return (engine && engine->on==&g_x_on)? (XEngine *)engine : 0;
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1483,7 +1491,7 @@ int
 GxAnimate(Engine *engine, GpBox *viewport)
 {
   XEngine *xeng = GisXEngine(engine);
-  int x, y, x0, y0, x1, y1;
+  int x, y, x1, y1;
   GpBox *v, *w;
   GpReal xmin, xmax, ymin, ymax;
   GpReal scalx, offx, scaly, offy;
@@ -1541,9 +1549,12 @@ GxAnimate(Engine *engine, GpBox *viewport)
     w->ymax = 0.0;
   }
   GpDeviceMap((Engine *)xeng);
-  GetXRectangle(&xeng->e.devMap, v, &x0, &y0, &x1, &y1);
-  x1 -= x0;
-  y1 -= y0;
+  /* GetXRectangle(&xeng->e.devMap, v, &x0, &y0, &x1, &y1);
+     x1 -= x0;
+     y1 -= y0;
+  */
+  x1 = xeng->wtop;
+  y1 = xeng->htop;
 
   /* create the offscreen pixmap */
   xeng->w = p_offscreen(xeng->win, x1, y1);
@@ -1631,37 +1642,18 @@ GxDirect(Engine *engine)
 
 void (*HLevelHook)(Engine *engine)= 0;
 
-/* hack to disconnect if last engine destroyed (see GhBeforeWait) */
-#define G_N_PENDING 4
-static p_scr *g_pending_scr[G_N_PENDING];
-static void g_do_disconnect(void);
 static void
 g_do_disconnect(void)
 {
-  p_scr *s;
-  int i;
-  for (i=0 ; i<=G_N_PENDING ; i++) {
-    s = g_pending_scr[i];
-    g_pending_scr[i] = 0;
-    if (s) g_disconnect(s);
+  if (g_screens) {
+    p_scr *s;
+    int i;
+    for (i=n_screens-1 ; i>=0 ; i--) {
+      s = g_screens[i].s;
+      if (s && !p_wincount(s)) g_disconnect(s);
+    }
   }
   g_pending_task = 0;
-}
-
-static void
-g_test_pending(p_scr *s)
-{
-  int i;
-  if (g_pending_task == g_do_disconnect) {
-    for (i=0 ; i<=G_N_PENDING ; i++)
-      if (g_pending_scr[i] == s) {
-        g_pending_scr[i] = 0;
-        break;
-      }
-  } else {
-    g_pending_task = 0;
-    for (i=0 ; i<=G_N_PENDING ; i++) g_pending_scr[i] = 0;
-  }
 }
 
 static void
@@ -1670,36 +1662,20 @@ ShutDown(XEngine *xeng)
   p_scr *s = xeng->s;
   p_win *w = xeng->w;
   p_win *win = xeng->win;
+  if ((Engine *)xeng == gxCurrentEngine) gxCurrentEngine = NULL;
   xeng->mapped= 0;
+  /* turn off all event callbacks (probably unnecessary) */
+  xeng->e.on = 0;
   /* destroy any hlevel references without further ado */
   if (HLevelHook) HLevelHook((Engine *)xeng);
   xeng->w = xeng->win = 0;
   xeng->s = 0;
+  /* note that p_destroy and GpDelEngine call on_destroy in Windows */
   if (w && w!=win) p_destroy(w);
   GpDelEngine(&xeng->e);
   if (s) {
-    Engine *eng;
-    XEngine *xe2;
-    for (eng=GpNextEngine(0) ; eng ; eng=GpNextEngine(eng)) {
-      xe2 = GisXEngine(eng);
-      if (xe2 && xe2->s==s) break;
-    }
-    if (!eng) {
-      int i;
-      if (g_pending_task == g_do_disconnect) {
-        for (i=0 ; i<=G_N_PENDING ; i++)
-          if (g_pending_scr[i] == s) break;
-        if (i >= G_N_PENDING) {
-          for (i=0 ; i<=G_N_PENDING ; i++)
-            if (!g_pending_scr[i]) break;
-          if (i < G_N_PENDING) g_pending_scr[i] = s;
-        }
-      } else {
-        g_pending_scr[0] = s;
-        for (i=1 ; i<=G_N_PENDING ; i++) g_pending_scr[i] = 0;
-        g_pending_task = g_do_disconnect;
-      }
-    }
+    if (!p_wincount(s))
+      g_pending_task = g_do_disconnect;
   }
 }
 
@@ -1746,12 +1722,26 @@ g_rgb_read(Engine *eng, GpColor *rgb, long *nx, long *ny)
 {
   XEngine *xeng = GisXEngine(eng);
   if (!xeng || !xeng->w || !xeng->win) return 1;
-  if (!rgb) {
-    *nx = xeng->wtop;
-    *ny = xeng->htop;
+  GpPreempt(eng);
+  GdDraw(1);       /* make sure screen updated */
+  GpPreempt(0);
+  if (xeng->w == xeng->win) {
+    /* not in animate mode */
+    if (!rgb) {
+      *nx = xeng->wtop;
+      *ny = xeng->htop;
+    } else {
+      p_rgb_read(xeng->win, rgb, xeng->leftMargin, xeng->topMargin,
+                 xeng->leftMargin+xeng->wtop, xeng->topMargin+xeng->htop);
+    }
   } else {
-    p_rgb_read(xeng->win, rgb, xeng->leftMargin, xeng->topMargin,
-               xeng->leftMargin+xeng->wtop, xeng->topMargin+xeng->htop);
+    /* in animate mode, read offscreen pixmap */
+    if (!rgb) {
+      *nx = xeng->a_width;
+      *ny = xeng->a_height;
+    } else {
+      p_rgb_read(xeng->w, rgb, 0, 0, xeng->a_width, xeng->a_height);
+    }
   }
   return 0;
 }

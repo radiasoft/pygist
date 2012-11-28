@@ -1,13 +1,12 @@
 /*
- * ENGINE.C
- *
  * $Id: engine.c,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Implement common properties of all GIST engines
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "gist.h"
 #include "engine.h"
@@ -35,7 +34,7 @@ static void DefaultClearArea(Engine *engine, GpBox *box)
   engine->damaged= engine->inhibit= 0;
 }
 
-Engine *GpNewEngine(long size, char *name, char *type,
+Engine *GpNewEngine(long size, char *name, g_callbacks *on,
                     GpTransform *transform, int landscape,
   void (*Kill)(Engine*), int (*Clear)(Engine*,int), int (*Flush)(Engine*),
   void (*ChangeMap)(Engine*), int (*ChangePalette)(Engine*),
@@ -64,7 +63,7 @@ Engine *GpNewEngine(long size, char *name, char *type,
   engine->nextActive= 0;
   engine->name= (char *)engine + size;
   strcpy(name? engine->name : "", name);
-  engine->type= type;
+  engine->on = on;
   engine->active= 0;
   engine->marked= 0;
 

@@ -864,25 +864,26 @@ elif macosx:
                  "src/play/mac/color.m",
                  "src/play/mac/font.m"]
 
-allsource = ["src/play/all/hash.c",
-             "src/play/all/hash0.c",
-             "src/play/all/mm.c",
-             "src/play/all/alarms.c",
-             "src/play/all/pstrcpy.c",
-             "src/play/all/pstrncat.c",
-             "src/play/all/p595.c",
-             "src/play/all/bitrev.c",
-             "src/play/all/bitlrot.c",
-             "src/play/all/bitmrot.c"]
+anysource = ["src/play/any/hash.c",
+             "src/play/any/hash0.c",
+             "src/play/any/mm.c",
+             "src/play/any/alarms.c",
+             "src/play/any/pstrcpy.c",
+             "src/play/any/pstrncat.c",
+             "src/play/any/p595.c",
+             "src/play/any/bitrev.c",
+             "src/play/any/bitlrot.c",
+             "src/play/any/bitmrot.c",
+             "src/play/any/pstdio.c"]
 
 if windows:
-    playsource = winsource + allsource
+    playsource = winsource + anysource
 elif cygwin:
-    playsource = unixsource + winsource + allsource
+    playsource = unixsource + winsource + anysource
 elif macosx:
-    playsource = unixsource + macsource + allsource
+    playsource = unixsource + macsource + anysource
 else:
-    playsource = unixsource + x11source + allsource
+    playsource = unixsource + x11source + anysource
 
 source = ['src/gistCmodule.c'] + gistsource + playsource
 
@@ -990,7 +991,14 @@ include_dirs.append(numpy.get_include())
 # --- With this, the data_files listed in setup will be installed in
 # --- the usual place in site-packages.
 for scheme in INSTALL_SCHEMES.values():
-    scheme['data'] = scheme['platlib']
+    if sys.platform == "darwin":
+        # --- A special hack is needed for darwin. In dist_utils/command/install.py, install_purelib
+        # --- is modified to the form below, but install_data is not. Without this hack, the data files
+        # --- would be installed in the Python directory in /System/Library, which is not by default
+        # --- user accessible.
+        scheme['data'] = os.path.join('/Library/Python', sys.version[:3], 'site-packages')
+    else:
+        scheme['data'] = scheme['platlib']
 
 # Now we know everything needed to define the extension module
 

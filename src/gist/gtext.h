@@ -1,13 +1,12 @@
 /*
- * GTEXT.H
- *
  * $Id: gtext.h,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Declare GIST text utilities
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef GTEXT_H
 #define GTEXT_H
@@ -15,8 +14,8 @@
 #include "gist.h"
 
 /* Return t->alignH, t->alignV, guaranteed not TH_NORMAL or TV_NORMAL */
-extern void GtGetAlignment(const GpTextAttribs *t,
-                           int *alignH, int *alignV);
+PLUG_API void GtGetAlignment(const GpTextAttribs *t,
+                             int *alignH, int *alignV);
 
 /* Get shape of text input to GdText, given a function Width which can
    compute the width of a simple text string (no imbedded \n).  Returns
@@ -27,18 +26,18 @@ extern void GtGetAlignment(const GpTextAttribs *t,
    non-escaped characters.  */
 typedef GpReal (*WidthFunction)(const char *text, int nChars,
                                 const GpTextAttribs *t);
-extern int GtTextShape(const char *text, const GpTextAttribs *t,
-                       WidthFunction Width, GpReal *widest);
+PLUG_API int GtTextShape(const char *text, const GpTextAttribs *t,
+                         WidthFunction Width, GpReal *widest);
 
 /* Return the next line of text-- if text[0] is not '\n' and path not
    T_UP or T_DOWN, returns text and a count of the characters in the
    line, nChars (always 1 if T_UP or T_DOWN).  If text is '\0', or '\n'
    with path T_UP or T_DOWN, returns 0.  Otherwise, returns text+1 and
    a count of the number of characters to the next '\n' or '\0'.  */
-extern const char *GtNextLine(const char *text, int *nChars, int path);
+PLUG_API const char *GtNextLine(const char *text, int *nChars, int path);
 
 /* Use ^ (superscript), _ (subscript), and ! (symbol) escape sequences
    in GpText.  These are on (gtDoEscapes==1) by default.  */
-extern int gtDoEscapes;
+PLUG_API int gtDoEscapes;
 
 #endif

@@ -1,16 +1,17 @@
 /*
- * GIST.H
- *
  * $Id: gist.h,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Declare GIST interface for C programs
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef GIST_H
 #define GIST_H
+
+#include "plugin.h"
 
 /* current code breaks if GpReal is float instead of double */
 typedef double GpReal;
@@ -29,9 +30,9 @@ typedef unsigned char GpColor;
 #define INCHES_PER_POINT (1./72.27)
 #define ONE_INCH (72.27*ONE_POINT)
 
-extern char gistError[128];  /* most recent error message */
+PLUG_API char gistError[128];  /* most recent error message */
 
-extern char *gistPathDefault;  /* set in Makefile or gread.c, can be
+PLUG_API char *gistPathDefault;  /* set in Makefile or gread.c, can be
                                   overridden by resetting directly */
 
 /* ------------------------------------------------------------------------ */
@@ -56,17 +57,34 @@ extern char *gistPathDefault;  /* set in Makefile or gread.c, can be
  */
 
 typedef struct Engine Engine;
-extern Engine *GpPSEngine(char *name, int landscape, int mode, char *file);
-extern Engine *GpCGMEngine(char *name, int landscape, int mode, char *file);
-extern Engine *GpBXEngine(char *name, int landscape, int dpi, char *display);
-extern Engine *GpFXEngine(char *name, int landscape, int dpi, char *display);
+PLUG_API Engine *GpPSEngine(char *name, int landscape, int mode, char *file);
+PLUG_API Engine *GpCGMEngine(char *name, int landscape, int mode, char *file);
+PLUG_API Engine *GpBXEngine(char *name, int landscape, int dpi, char *display);
+PLUG_API Engine *GpFXEngine(char *name, int landscape, int dpi, char *display);
 
-extern void GpKillEngine(Engine *engine);
+PLUG_API void GpKillEngine(Engine *engine);
 
-extern int gist_input_hint, gist_private_map, gist_rgb_hint;
-extern void g_initializer(int *pargc, char *argv[]);
-extern void (*g_on_keyline)(char *msg);
-extern void (*g_stdout)(char *output_line);
+PLUG_API int gist_input_hint, gist_private_map, gist_rgb_hint;
+PLUG_API void g_initializer(int *pargc, char *argv[]);
+PLUG_API char *g_set_path(char *gpath);
+PLUG_API void (*g_on_keyline)(char *msg);
+PLUG_API void (*g_stdout)(char *output_line);
+
+typedef struct g_callbacks g_callbacks;
+struct g_callbacks {
+  char *id;    /* just to ease debugging */
+  /* window system events */
+  void (*expose)(void *c, int *xy);
+  void (*destroy)(void *c);
+  void (*resize)(void *c,int w,int h);
+  void (*focus)(void *c,int in);
+  void (*key)(void *c,int k,int md);
+  void (*click)(void *c,int b,int md,int x,int y, unsigned long ms);
+  void (*motion)(void *c,int md,int x,int y);
+  void (*deselect)(void *c);
+};
+
+PLUG_API int gist_expose_wait(Engine *eng, void (*e_callback)(void));
 
 /* ------------------------------------------------------------------------ */
 /* Control Functions */
@@ -77,16 +95,16 @@ extern void (*g_stdout)(char *output_line);
    off preemptive mode.  The preempting engine need not be active;
    it will still get all output until preempt mode is turned off, at
    which time it returns to its original state.  */
-extern int GpActivate(Engine *engine);
-extern int GpDeactivate(Engine *engine);
-extern int GpPreempt(Engine *engine);
-extern int GpActive(Engine *engine);  /* 1 if active or preempting, else 0 */
+PLUG_API int GpActivate(Engine *engine);
+PLUG_API int GpDeactivate(Engine *engine);
+PLUG_API int GpPreempt(Engine *engine);
+PLUG_API int GpActive(Engine *engine);  /* 1 if active or preempting, else 0 */
 
 /* Pass engine==0 to GpClear or GpFlush to affect all active engines.  */
-extern int GpClear(Engine *engine, int flag);
+PLUG_API int GpClear(Engine *engine, int flag);
 #define CONDITIONALLY 0
 #define ALWAYS 1
-extern int GpFlush(Engine *engine);
+PLUG_API int GpFlush(Engine *engine);
 
 /* The Next routines provide a way to iterate throught the engine lists.
    Engines will be returned in order they are created or activated.
@@ -94,8 +112,8 @@ extern int GpFlush(Engine *engine);
    when there are no more engines in the list.  If preemptive mode has
    been set with GpPreempt, GpNextActive returns the preempting engine,
    whether or not it is in the active list.  */
-extern Engine *GpNextEngine(Engine *engine);
-extern Engine *GpNextActive(Engine *engine);
+PLUG_API Engine *GpNextEngine(Engine *engine);
+PLUG_API Engine *GpNextActive(Engine *engine);
 
 /* ------------------------------------------------------------------------ */
 /* Transformations and Clipping */
@@ -115,7 +133,7 @@ struct GpTransform {
    transformation to device coordinates can be computed.  (GpActivate
    also sets the device coordinate transformation in the engine.)
    This transformation is also loaded into the gistA attribute list.  */
-extern int GpSetTrans(const GpTransform *trans);
+PLUG_API int GpSetTrans(const GpTransform *trans);
 
 /* Although NDC space has a particular meaning, an 8.5x11 sheet of
    paper may have x along the 8.5 inch edge (portrait mode), or x along
@@ -124,13 +142,13 @@ extern int GpSetTrans(const GpTransform *trans);
    Engine basis using GpLandscape, or for all active engines with
    GpLandscape(0).  If you use the D level routines, you shouldn't
    need this.  */
-extern int GpLandscape(Engine *engine, int landscape);
+PLUG_API int GpLandscape(Engine *engine, int landscape);
 
 /* current transformation */
-extern GpTransform gistT;  /* use GpSetTrans to set this properly */
+PLUG_API GpTransform gistT;  /* use GpSetTrans to set this properly */
 
 /* Turn clipping on or off by setting gistClip.  */
-extern int gistClip;         /* 1 to clip to map.viewport, 0 to not clip */
+PLUG_API int gistClip;         /* 1 to clip to map.viewport, 0 to not clip */
 
 /* Often, the linear transformation represented by a GpTransform is
    required in the simpler form dst= scale*src+offset.  The following
@@ -145,34 +163,34 @@ struct GpXYMap {
   GpMap x, y;
 };
 
-extern void GpSetMap(const GpBox *src, const GpBox *dst, GpXYMap *map);
+PLUG_API void GpSetMap(const GpBox *src, const GpBox *dst, GpXYMap *map);
 
 /* gPortrait and gLandscape contain, respectively, boxes representing
    an 8.5-by-11 inch and an 11-by8.5 inch page in NDC */
-extern GpBox gPortrait;
-extern GpBox gLandscape;
+PLUG_API GpBox gPortrait;
+PLUG_API GpBox gLandscape;
 
 /* Utilities for GpBox, assuming min<=max for both boxes */
-extern int GpIntersect(const GpBox *box1, const GpBox *box2);
-extern int GpContains(const GpBox *box1, const GpBox *box2); /* box1>=box2 */
-extern void GpSwallow(GpBox *preditor, const GpBox *prey);
+PLUG_API int GpIntersect(const GpBox *box1, const GpBox *box2);
+PLUG_API int GpContains(const GpBox *box1, const GpBox *box2); /* box1>=box2 */
+PLUG_API void GpSwallow(GpBox *preditor, const GpBox *prey);
 
 /* ------------------------------------------------------------------------ */
 /* Output Primitives */
 
-extern int GpLines(long n, const GpReal *px, const GpReal *py);
-extern int GpMarkers(long n, const GpReal *px, const GpReal *py);
-extern int GpText(GpReal x0, GpReal y0, const char *text);
+PLUG_API int GpLines(long n, const GpReal *px, const GpReal *py);
+PLUG_API int GpMarkers(long n, const GpReal *px, const GpReal *py);
+PLUG_API int GpText(GpReal x0, GpReal y0, const char *text);
   /* WARNING- for GpText, (x0,y0) are in WC, but the text size and
               orientation are specified in NDC (unlike GKS).  */
-extern int GpFill(long n, const GpReal *px, const GpReal *py);
-extern int GpCells(GpReal px, GpReal py, GpReal qx, GpReal qy,
-                   long width, long height, long nColumns,
-                   const GpColor *colors);
+PLUG_API int GpFill(long n, const GpReal *px, const GpReal *py);
+PLUG_API int GpCells(GpReal px, GpReal py, GpReal qx, GpReal qy,
+                     long width, long height, long nColumns,
+                     const GpColor *colors);
 
 /* GKS seems to be missing a disjoint line primitive... */
-extern int GpDisjoint(long n, const GpReal *px, const GpReal *py,
-                      const GpReal *qx, const GpReal *qy);
+PLUG_API int GpDisjoint(long n, const GpReal *px, const GpReal *py,
+                        const GpReal *qx, const GpReal *qy);
 
 /* ------------------------------------------------------------------------ */
 /* Output attributes */
@@ -327,7 +345,7 @@ struct GaAttributes {
   int rgb;  /* for GpCells */
 };
 
-extern GaAttributes gistA;
+PLUG_API GaAttributes gistA;
 
 typedef struct GaAxisStyle GaAxisStyle;
 struct GaAxisStyle {
@@ -374,13 +392,9 @@ struct GaTickStyle {
 
 /*
   GIST includes a few output routines at a higher level than GKS.
-
-  These cover the traditional types of plots available as output from
-  the LASNEX laser fusion code, a large physics simulation code, plus
-  a filled mesh plot.
  */
 
-extern int GaLines(long n, const GpReal *px, const GpReal *py);
+PLUG_API int GaLines(long n, const GpReal *px, const GpReal *py);
        /* Like GpLines, but includes GaAttributes fancy line attributes
           as well as the line attributes from GpAttributes.  */
 
@@ -411,7 +425,7 @@ struct GaQuadMesh {
                       triangulated.  */
 };
 
-extern int GaMesh(GaQuadMesh *mesh, int region, int boundary, int inhibit);
+PLUG_API int GaMesh(GaQuadMesh *mesh, int region, int boundary, int inhibit);
        /* Plots the quadrilateral mesh.  If boundary==0,
           a mesh line is plotted whenever either zone it borders
           belongs to the given region.  An exception is made if
@@ -423,8 +437,8 @@ extern int GaMesh(GaQuadMesh *mesh, int region, int boundary, int inhibit);
           If inhibit&1, then lines at constant j are not drawn;
           if inhibit&2, then lines at constant i are not drawn.  */
 
-extern int GaFillMesh(GaQuadMesh *mesh, int region, const GpColor *colors,
-                      long nColumns);
+PLUG_API int GaFillMesh(GaQuadMesh *mesh, int region, const GpColor *colors,
+                        long nColumns);
        /* Fills each zone of the quadrilateral mesh according to the
           (iMax-1)-by-(jMax-1) array of colors.  The colors array may
           be a subarray of a larger rectangular array; therefore, you
@@ -436,18 +450,18 @@ extern int GaFillMesh(GaQuadMesh *mesh, int region, const GpColor *colors,
           gistA.f.color.)  If gistA.e.type!=L_NONE, an edge is drawn
           around each zone as it is drawn.  */
 
-extern int GaFillMarker(long n, const GpReal *px, const GpReal *py,
-                        GpReal x0, GpReal y0);
+PLUG_API int GaFillMarker(long n, const GpReal *px, const GpReal *py,
+                          GpReal x0, GpReal y0);
        /* Fills (px,py)[n] in NDC with origin at (x0,y0) in world.  */
 
-extern int GaVectors(GaQuadMesh *mesh, int region,
-                     const GpReal *u, const GpReal *v, GpReal scale);
+PLUG_API int GaVectors(GaQuadMesh *mesh, int region,
+                       const GpReal *u, const GpReal *v, GpReal scale);
        /* Plot a vector scale*(u,v) at each point of the current
           mesh (gistA.mesh).  If region==0, the entire mesh is
           drawn, otherwise only the specified region.  */
 
-extern int GaContourInit(GaQuadMesh *mesh, int region,
-                         const GpReal *z, GpReal level);
+PLUG_API int GaContourInit(GaQuadMesh *mesh, int region,
+                           const GpReal *z, GpReal level);
        /* Find the edges cut by the current contour, remembering z, mesh
           region, and level for the GaContour routine, which actually
           walks the contour.  The z array represents function values at
@@ -463,7 +477,7 @@ extern int GaContourInit(GaQuadMesh *mesh, int region,
           returned after a subsequent call to GaContourInit with a
           new contour level.  */
 
-extern int GaContour(long *cn, GpReal **cx, GpReal **cy, int *closed);
+PLUG_API int GaContour(long *cn, GpReal **cx, GpReal **cy, int *closed);
        /* After a call to GaContourInit, GaContour must be called
           repeatedly to generate the sequence of curves obtained by
           walking the edges cut by the contour level plane.  GaContour
@@ -474,12 +488,12 @@ extern int GaContour(long *cn, GpReal **cx, GpReal **cy, int *closed);
           not be freed.  (*cx, *cy) are valid only until the next
           GaContour or GaMesh call.  */
 
-extern int GaTicks(GaTickStyle *ticks, int xIsLog, int yIsLog);
+PLUG_API int GaTicks(GaTickStyle *ticks, int xIsLog, int yIsLog);
        /* Draws a system of tick marks and labels for the current
           transformation (gistT), according to the specified
           tick style.  */
 
-extern int GaFreeScratch(void);
+PLUG_API int GaFreeScratch(void);
        /* Frees scratch space required by GaMesh, GaContour,
           and GaContourInit, and GaTicks.  Ordinarily, there is no reason
           to call this, as the amount of scratch space required is modest
@@ -508,19 +522,19 @@ typedef int GaAltLabel(char *label, GpReal value);
          it will be called once in this mode for every value, and if it
          fails for any value, the default scheme will be used instead.  */
 
-extern int Base60Ticks(GpReal lo, GpReal hi, GpReal nMajor, GpReal nMinor,
-                       GpReal *ticks, int nlevel[TICK_LEVELS]);
+PLUG_API int Base60Ticks(GpReal lo, GpReal hi, GpReal nMajor, GpReal nMinor,
+                         GpReal *ticks, int nlevel[TICK_LEVELS]);
      /* Puts ticks at multiples of 30, failing if lo<=-3600 or hi>=+3600.
         For ticks at multiples of 10 or less, the subdivisions are
         identical to the default decimal tick scheme.  */
-extern int DegreeLabels(char *label, GpReal value);
+PLUG_API int DegreeLabels(char *label, GpReal value);
      /* Prints (value+180)%360-180 instead of just value.  */
-extern int HourLabels(char *label, GpReal value);
+PLUG_API int HourLabels(char *label, GpReal value);
      /* Prints hh:mm (or mm:ss) for value 60*hh+mm (or 60*mm+ss).  */
 
-extern int GaAltTick(GaTickStyle *ticks, int xIsLog, int yIsLog,
-                      GaAltTicks *xtick, GaAltLabel *xlabel,
-                      GaAltTicks *ytick, GaAltLabel *ylabel);
+PLUG_API int GaAltTick(GaTickStyle *ticks, int xIsLog, int yIsLog,
+                       GaAltTicks *xtick, GaAltLabel *xlabel,
+                       GaAltTicks *ytick, GaAltLabel *ylabel);
        /* Like GaTicks, but uses the specified ticker and labeler for
           non-log axes.  Log axes always use the defaults.  Either
           ticker or labeler or both may be zero to use the default.  */
@@ -544,11 +558,11 @@ extern int GaAltTick(GaTickStyle *ticks, int xIsLog, int yIsLog,
  * After you call GcInit1 or GcInit2, you must allocate px[ntotal],
  * py[ntotal], and n[nparts] arrays, then call GcTrace to fill them.
  */
-extern long GcInit1(GaQuadMesh *mesh, int region, const GpReal *zz,
-                    GpReal lev, long *nparts);
-extern long GcInit2(GaQuadMesh *mesh, int region, const GpReal *zz,
-                    GpReal levs[2], long nchunk, long *nparts);
-extern long GcTrace(long *n, GpReal *px, GpReal *py);
+PLUG_API long GcInit1(GaQuadMesh *mesh, int region, const GpReal *zz,
+                      GpReal lev, long *nparts);
+PLUG_API long GcInit2(GaQuadMesh *mesh, int region, const GpReal *zz,
+                      GpReal levs[2], long nchunk, long *nparts);
+PLUG_API long GcTrace(long *n, GpReal *px, GpReal *py);
 
 /* ------------------------------------------------------------------------ */
 /* Display list routines */
@@ -573,8 +587,8 @@ extern long GcTrace(long *n, GpReal *px, GpReal *py);
 
 typedef struct Drauing Drauing;
 
-extern Drauing *GdNewDrawing(char *gsFile);
-extern void GdKillDrawing(Drauing *drawing);
+PLUG_API Drauing *GdNewDrawing(char *gsFile);
+PLUG_API void GdKillDrawing(Drauing *drawing);
 
 /* After GdNewDrawing, the new drawing becomes the current drawing.
    GdSetDrawing can be used to change the current drawing.  This
@@ -582,19 +596,19 @@ extern void GdKillDrawing(Drauing *drawing);
    element, etc.), which can be recalled using GdSetDrawing(0).
    Otherwise, GdSetDrawing scans the drawing to find the latest
    system, element, and mesh, and these become current.  */
-extern int GdSetDrawing(Drauing *drawing);
+PLUG_API int GdSetDrawing(Drauing *drawing);
 
 /* GdClear marks the drawing as cleared, but no action is taken until
    something new is drawn, at which point the cleared display list
    elements are discarded.  GpClear is not sent until the next
    GdDraw.  If drawing is 0, the current drawing is assumed.  */
-extern int GdClear(Drauing *drawing);
+PLUG_API int GdClear(Drauing *drawing);
 
 /* If changesOnly is non-zero, only new elements or damaged areas
    are redrawn.  The amount drawn may be recorded by each engine, and
    may vary from engine to engine.
    The Drauing* is also recorded on each engine.  */
-extern int GdDraw(int changesOnly);
+PLUG_API int GdDraw(int changesOnly);
 
 /* Graphical elements are added to the current drawing by setting
    attributes in gistA, then calling GdLines, GdDisjoint, GdCells, GdMesh,
@@ -604,15 +618,15 @@ extern int GdDraw(int changesOnly);
    of objects defined in the current drawing since the last GdClear).
    They return -1 if an error occurs.  */
 
-extern int GdLines(long n, const GpReal *px, const GpReal *py);
-extern int GdDisjoint(long n, const GpReal *px, const GpReal *py,
-                      const GpReal *qx, const GpReal *qy);
-extern int GdText(GpReal x0, GpReal y0, const char *text, int toSys);
-extern int GdCells(GpReal px, GpReal py, GpReal qx, GpReal qy,
-                   long width, long height, long nColumns,
-                   const GpColor *colors);
-extern int GdFill(long n, const GpColor *colors, const GpReal *px,
-                  const GpReal *py, const long *pn);
+PLUG_API int GdLines(long n, const GpReal *px, const GpReal *py);
+PLUG_API int GdDisjoint(long n, const GpReal *px, const GpReal *py,
+                        const GpReal *qx, const GpReal *qy);
+PLUG_API int GdText(GpReal x0, GpReal y0, const char *text, int toSys);
+PLUG_API int GdCells(GpReal px, GpReal py, GpReal qx, GpReal qy,
+                     long width, long height, long nColumns,
+                     const GpColor *colors);
+PLUG_API int GdFill(long n, const GpColor *colors, const GpReal *px,
+                    const GpReal *py, const long *pn);
 
 /* The other D level primitives involve mesh arrays.  It is often
    convenient NOT to copy mesh data, so that several objects may
@@ -625,14 +639,14 @@ extern int GdFill(long n, const GpColor *colors, const GpReal *px,
    when Gist discards the object, it will not free the pointers (the
    memory management responsibility is yours).  However, if you
    supply a GdFree routine, Gist will call that for uncopied objects.  */
-extern int GdMesh(int noCopy, GaQuadMesh *mesh, int region, int boundary,
-                  int inhibit);
-extern int GdFillMesh(int noCopy, GaQuadMesh *mesh, int region,
-                      GpColor *colors, long nColumns);
-extern int GdVectors(int noCopy, GaQuadMesh *mesh, int region,
-                     GpReal *u, GpReal *v, GpReal scale);
-extern int GdContours(int noCopy, GaQuadMesh *mesh, int region,
-                      GpReal *z, const GpReal *levels, int nLevels);
+PLUG_API int GdMesh(int noCopy, GaQuadMesh *mesh, int region, int boundary,
+                    int inhibit);
+PLUG_API int GdFillMesh(int noCopy, GaQuadMesh *mesh, int region,
+                        GpColor *colors, long nColumns);
+PLUG_API int GdVectors(int noCopy, GaQuadMesh *mesh, int region,
+                       GpReal *u, GpReal *v, GpReal scale);
+PLUG_API int GdContours(int noCopy, GaQuadMesh *mesh, int region,
+                        GpReal *z, const GpReal *levels, int nLevels);
 #define NOCOPY_MESH 1
 #define NOCOPY_COLORS 2
 #define NOCOPY_UV 4
@@ -715,7 +729,7 @@ struct GdProperties {
   long *pn;
 };
 
-extern GdProperties gistD;
+PLUG_API GdProperties gistD;
 
 /* GdSetSystem, GdSetElement, and GdSetContour cause the contents
    of one drawing element to be copied into gistD and gistA for
@@ -724,12 +738,12 @@ extern GdProperties gistD;
    GdText, GdCells, GdMesh, GdFillMesh, GdVectors, and GdContours
    do an automatic GdSetElement to the newly created element.
    The return values are E_LINES, ... E_SYSTEM; E_NONE on failure.  */
-extern int GdSetSystem(int sysIndex);
-extern int GdSetElement(int elIndex);
-extern int GdSetContour(int levIndex);
+PLUG_API int GdSetSystem(int sysIndex);
+PLUG_API int GdSetElement(int elIndex);
+PLUG_API int GdSetContour(int levIndex);
 
 /* return current sysIndex, or <0 if unavailable */
-extern int GdGetSystem(void);
+PLUG_API int GdGetSystem(void);
 
 /* The elIndex required by GdSetElement is NOT the id number returned
    by GdLines, GdMesh, etc.  Instead, elIndex begins at 0 and goes
@@ -738,10 +752,10 @@ extern int GdGetSystem(void);
    The sysIndex varies from 0 (outside of all systems), up to the
    total number of coordinate systems defined in the current Drauing.
    To find the sysIndex for a given element id, use GdFindSystem(id).  */
-extern int GdFindIndex(int id);  /* returns -1 if no such element
-                                    if current system */
-extern int GdFindSystem(int id); /* returns -1 if no such element
-                                    anywhere in current Drauing */
+PLUG_API int GdFindIndex(int id);  /* returns -1 if no such element
+                                      if current system */
+PLUG_API int GdFindSystem(int id); /* returns -1 if no such element
+                                      anywhere in current Drauing */
 
 /* After you call one of the 3 GdSet... routines, you may
    alter the contents of gistA and/or gistD, then call
@@ -756,10 +770,10 @@ extern int GdFindSystem(int id); /* returns -1 if no such element
    gistD.mesh->triangle, use GdEdit(CHANGE_Z).
    Use GdEdit(CHANGE_XY | CHANGE_Z) if both apply.
    GdRemove completely removes the element from the drawing.  */
-extern int GdEdit(int xyzChanged);
+PLUG_API int GdEdit(int xyzChanged);
 #define CHANGE_XY 1
 #define CHANGE_Z 2
-extern int GdRemove(void);
+PLUG_API int GdRemove(void);
 
 /* GdGetLimits copies the current coordinate systems limits into
    gistD.limits and gistD.flags.  GdSetLimits sets the limits in
@@ -768,9 +782,9 @@ extern int GdRemove(void);
    may be adjusted, but this will not happen until the drawing
    is rendered on at least one engine).  GdSetPort sets the tick
    style and viewport for the current coordinate system.  */
-extern int GdGetLimits(void);
-extern int GdSetLimits(void);
-extern int GdSetPort(void);
+PLUG_API int GdGetLimits(void);
+PLUG_API int GdSetLimits(void);
+PLUG_API int GdSetPort(void);
 
 /* Each coordinate system keeps a "saved" set of limits, which
    can be "reverted" to return the limits to the state at the time
@@ -781,23 +795,23 @@ extern int GdSetPort(void);
    limits are marked D_ZOOMED, while GdRevertLimits(0) reverts
    unconditionally.  GdSaveLimits(1) assures that D_ZOOMED is not
    set in the saved flags.  */
-extern int GdSaveLimits(int resetZoomed);
-extern int GdRevertLimits(int ifZoomed);
+PLUG_API int GdSaveLimits(int resetZoomed);
+PLUG_API int GdRevertLimits(int ifZoomed);
 
 /* You can register an alternative tick and/or label generator for
    each axis of the current corodinate system.  They will not be used
    unless the ALT_TICK or ALT_LABEL limits flag is set.  Passing 0
    to GdAltTick leaves the corresponding function unchanged -- there
    is no way to unregister it (just turn off the limits flag).  */
-extern int GdAltTick(GaAltTicks *xtick, GaAltLabel *xlabel,
-                     GaAltTicks *ytick, GaAltLabel *ylabel);
+PLUG_API int GdAltTick(GaAltTicks *xtick, GaAltLabel *xlabel,
+                       GaAltTicks *ytick, GaAltLabel *ylabel);
 
 /* Unlike the other `D' level drawing routines, GdDrawLegends acts
    immediately.  If engine==0, all active engines are used.
    The intent is that legends not be rendered in an X window or
    other interactive device, but this optional routine can render
    them on a hardcopy device.  */
-extern int GdDrawLegends(Engine *engine);
+PLUG_API int GdDrawLegends(Engine *engine);
 
 /* ------------------------------------------------------------------------ */
 /* The following Gd routines are not intended for ordinary use:
@@ -810,30 +824,30 @@ extern int GdDrawLegends(Engine *engine);
 
 /* GdReadStyle clears the drawing and removes all its current systems
    as a side effect.  It is the worker for GdNewDrawing.  */
-extern int GdReadStyle(Drauing *drawing, const char *gsFile);
+PLUG_API int GdReadStyle(Drauing *drawing, const char *gsFile);
 
 /* Coordinate systems are usually defined in the styleFile, but
    a new coordinate system may be added with GdNewSystem, which
    returns the index of the newly created system.  */
-extern int GdNewSystem(GpBox *viewport, GaTickStyle *ticks);
+PLUG_API int GdNewSystem(GpBox *viewport, GaTickStyle *ticks);
 
 /* Set current drawing to landscape or portrait mode */
-extern int GdLandscape(int landscape);
+PLUG_API int GdLandscape(int landscape);
 
 /* Set location and properties of legends for output.   */
-extern int GdLegendBox(int which, GpReal x, GpReal y, GpReal dx, GpReal dy,
-                       const GpTextAttribs *t, int nchars, int nlines,
-                       int nwrap);
+PLUG_API int GdLegendBox(int which, GpReal x, GpReal y, GpReal dx, GpReal dy,
+                         const GpTextAttribs *t, int nchars, int nlines,
+                         int nwrap);
 
 /* GdDetach detaches one or all (if drawing==0) drawings from one or all
    (if engine==0) engines.  Whether an engine is active or not is
    unimportant.  A drawing is attached to an engine by GdDraw.  */
-extern void GdDetach(Drauing *drawing, Engine *engine);
+PLUG_API void GdDetach(Drauing *drawing, Engine *engine);
 
 /* Clear the current coordinate system-- returns 0 if there is no
    current system.  Damages viewport only if all limits fixed,
    otherwise damages both ticks and viewport.  Returns damaged box.  */
-extern GpBox *GdClearSystem(void);
+PLUG_API GpBox *GdClearSystem(void);
 
 /* ------------------------------------------------------------------------ */
 /* Color */
@@ -884,25 +898,25 @@ typedef unsigned long GpColorCell;
    for converting color TV signals to monochrome.  GpPutRGB copies the
    gray entry into the red, green, and blue entries.  */
 /* these all no-ops now */
-extern void GpPutGray(int nColors, GpColorCell *palette);
-extern void GpPutNTSC(int nColors, GpColorCell *palette);
-extern void GpPutRGB(int nColors, GpColorCell *palette);
+PLUG_API void GpPutGray(int nColors, GpColorCell *palette);
+PLUG_API void GpPutNTSC(int nColors, GpColorCell *palette);
+PLUG_API void GpPutRGB(int nColors, GpColorCell *palette);
 
 /* Set the palette; the change takes place as soon as possible for
    this engine and the effect on previously drawn objects is
    engine dependent.  The maximum usable palette size is returned.  */
-extern int GpSetPalette(Engine *engine, GpColorCell *palette, int nColors);
+PLUG_API int GpSetPalette(Engine *engine, GpColorCell *palette, int nColors);
 
 /* GpGetPalette returns the number of colors in the palette-
    this is the nColors passed to GpSetPalette.  */
-extern int GpGetPalette(Engine *engine, GpColorCell **palette);
+PLUG_API int GpGetPalette(Engine *engine, GpColorCell **palette);
 
 /* GpReadPalette returns the number of colors found in the palette
    file (see gread.c for format), as well as the palette itself.
    If the number of colors in the palette exceeds maxColors, attempts
    to scale to maxColors.  */
-extern int GpReadPalette(Engine *engine, const char *gpFile,
-                         GpColorCell **palette, int maxColors);
+PLUG_API int GpReadPalette(Engine *engine, const char *gpFile,
+                           GpColorCell **palette, int maxColors);
 
 /* The PostScript and CGM formats, unlike Xlib, guarantee that
    the color table from one page does not automatically carry over to
@@ -917,20 +931,20 @@ extern int GpReadPalette(Engine *engine, const char *gpFile,
    use the best available shared colors.  Setting colorMode to 1
    results in exact private colors, which may require a private
    colormap.  */
-extern int GpDumpColors(Engine *engine, int colorMode);
+PLUG_API int GpDumpColors(Engine *engine, int colorMode);
 
 /* ------------------------------------------------------------------------ */
 /* Error handlers */
 
 /* The Xlib functions invoked by X engines will call exit unless you
    set an alternative error recovery routine.  */
-extern int GpSetXHandler(void (*ErrHandler)(char *errMsg));
+PLUG_API int GpSetXHandler(void (*ErrHandler)(char *errMsg));
 
 /* ------------------------------------------------------------------------ */
 /* Memory management */
 
 /* GdFree, if non-0, will be called to free objects
    marked with the noCopy flag.  */
-extern void (*GdFree)(void *);
+PLUG_API void (*GdFree)(void *);
 
 #endif

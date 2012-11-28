@@ -1,8 +1,11 @@
 /*
- * pwin.c -- $Id: pwin.c,v 1.1 2009/11/19 23:44:51 dave Exp $
+ * $Id: pwin.c,v 1.3 2007-06-24 20:32:49 dhmunro Exp $
  * X11 window management procedures
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "config.h"
@@ -101,10 +104,12 @@ x_create(p_scr *s, Window parent, int hints, void *ctx,
   w->height = height;
   w->xyclip[0] = w->xyclip[1] = w->xyclip[2] = w->xyclip[3] = 0;
 
-  if (p_signalling) p_abort();
+  if (p_signalling) goto fail2;
+  s->nwins++;
   return w;
 
   {
+  fail2: if (w->pixels) p_free(w->pixels);
   fail1: XDestroyWindow(dpy, w->d);
   fail0: p_free(w);
   }
@@ -129,6 +134,21 @@ static XSizeHints *size_hints = 0;
 static XWMHints *wm_hints = 0;
 static XClassHint *class_hint = 0;
 
+p_win *p_subwindow(p_scr *s, int width, int height,
+                   unsigned long parent_id, int x, int y,
+                   p_col_t bg, int hints, void *ctx)
+{
+  p_win *w = x_create(s, (Window)parent_id, hints, ctx,
+                      x, y, width, height, 2, bg, PWIN_PLAIN);
+  if (w) {
+    Display *dpy = s->xdpy->dpy;
+    if (hints&P_RGBMODEL) x_rgb_palette(w);
+    XMapWindow(dpy, w->d);
+    if (p_signalling) p_abort();
+  }
+  return w;
+}
+
 p_win *
 p_window(p_scr *s, int width, int height, char *title,
          p_col_t bg, int hints, void *ctx)
@@ -140,6 +160,7 @@ p_window(p_scr *s, int width, int height, char *title,
     Display *dpy = s->xdpy->dpy;
     Window xwin = w->d;
 
+    w->is_menu = 0;
     /* create and initialize private colormap if requested
      * - do it here instead of on demand (by p_palette), so that
      *   OpenGL child window can find the colormap if necessary
@@ -251,7 +272,11 @@ p_menu(p_scr *s, int width, int height, int x, int y,
       p_destroy(w);
       w = 0;
     }
-    if (p_signalling) p_abort();
+    if (p_signalling) {
+      p_destroy(w);
+      w = 0;
+      p_abort();
+    }
   }
   return w;
 }
@@ -323,9 +348,11 @@ p_destroy(p_win *w)
       /* make sure no more events will be delivered */
       p_hinsert(xdpy->id2pwin, P_IHASH(xwin), (void *)0);
       w->d = None;
+      w->s->nwins--;
       XDestroyWindow(dpy, xwin);
     } else {
       w->d = None;
+      w->s->nwins--;
       XFreePixmap(dpy, xwin);
     }
   }

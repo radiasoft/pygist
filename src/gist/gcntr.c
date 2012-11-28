@@ -1,9 +1,12 @@
 /*
-  GCNTR.C
-  General purpose contour tracer for quadrilateral meshes.
-  Handles single level contours, or region between a pair of levels.
-
-  $Id: gcntr.c,v 1.1 2009/11/19 23:44:47 dave Exp $
+ * $Id: gcntr.c,v 1.1 2005-09-18 22:04:32 dhmunro Exp $
+ * General purpose contour tracer for quadrilateral meshes.
+ * Handles single level contours, or region between a pair of levels.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "gist.h"

@@ -1,13 +1,12 @@
 /*
- * GIST.C
- *
  * $Id: gist.c,v 1.1 2009/11/19 23:44:47 dave Exp $
- *
  * Implement non-device specific portion of GIST C interface
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "gist.h"
 #include "engine.h"
@@ -149,6 +148,7 @@ int GpMarkers(long n, const GpReal *px, const GpReal *py)
     py= yClip;
   }
   gpClipInit= 0;
+  if (!n) return value;
 
   for (engine=GpNextActive(0) ; engine ; engine=GpNextActive(engine)) {
     if (!engine->inhibit) {

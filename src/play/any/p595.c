@@ -1,8 +1,11 @@
 /*
- * p595.c -- $Id: p595.c,v 1.1 2009/11/19 23:44:48 dave Exp $
+ * $Id: p595.c,v 1.1 2005-09-18 22:05:44 dhmunro Exp $
  * 5x9x5 rgb colormap for p_palette(w,p_595,225)
- *
- * Copyright (c) 1998.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #include "play.h"

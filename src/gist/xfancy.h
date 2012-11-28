@@ -1,13 +1,12 @@
 /*
- * XFANCY.H
- *
  * $Id: xfancy.h,v 1.1 2009/11/19 23:44:48 dave Exp $
- *
  * Declare the fancy X windows engine for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #ifndef XFANCY_H
 #define XFANCY_H
@@ -39,7 +38,7 @@ struct FXEngine {
 };
 
 /* zoom factor for point-and-click zooming */
-extern GpReal gxZoomFactor;
+PLUG_API GpReal gxZoomFactor;
 
 /* The GxPointClick function initiates an interactive point-and-click
    session with the window -- it will not return until a button has
@@ -65,9 +64,14 @@ extern GpReal gxZoomFactor;
                               1 shift, 2 lock, 4 control, 8 - 128 mod1-5
                    xn, yn  -- NDC coordinates of pointer
  */
-extern int GxPointClick(Engine *engine, int style, int system,
-                        int (*CallBack)(Engine *engine, int system,
-                                        int release, GpReal x, GpReal y,
-                                        int butmod, GpReal xn, GpReal yn));
+PLUG_API int GxPointClick(Engine *engine, int style, int system,
+                          int (*CallBack)(Engine *engine, int system,
+                                          int release, GpReal x, GpReal y,
+                                          int butmod, GpReal xn, GpReal yn));
+
+/* Variables to store coordinate system and mouse coordinates after
+   last mouse motion (also see gxCurrentEngine in xbasic.h). */
+PLUG_API int gxCurrentSys;
+PLUG_API GpReal gxCurrentX, gxCurrentY;
 
 #endif

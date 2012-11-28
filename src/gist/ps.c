@@ -1,13 +1,12 @@
 /*
- * PS.C
- *
  * $Id: ps.c,v 1.2 2011/06/28 18:45:07 grote Exp $
- *
  * Implement the PostScript engine for GIST.
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "pstdio.h"
 #include "ps.h"
@@ -23,7 +22,7 @@ extern p_file *GistOpen(const char *name);  /* from gread.c */
 #define CREATE_PS(name) p_fopen(name, "w")
 #endif
 
-static char *psType= "PostScript";
+static g_callbacks g_ps_on = { "gist PSEngine", 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static char line[80];  /* no lines longer than 78 characters! */
 
@@ -76,7 +75,7 @@ static int ps_fputs(p_file *file, char *buf);
 
 static const char *titleIs;
 static int needUser, needDate;
-static void *pf_stdout = &titleIs;  /* any non-zero address will do */
+static void *pf_stdout = &needUser;  /* any non-zero address will do */
 
 static int
 ps_fputs(p_file *file, char *buf)
@@ -1067,8 +1066,6 @@ static int DrwText(Engine *engine, GpReal x0, GpReal y0, const char *text)
     *now++= ')';
     nchars++;
     *now= '\0';
-
-    if(!text) break; /* This can occur if DrwText was called with text="" */
   }
   psEngine->nchars= nchars;
 
@@ -1372,7 +1369,7 @@ Engine *GpPSEngine(char *name, int landscape, int mode, char *file)
   SetPSTransform(&toPixels, landscape);
 
   psEngine=
-    (PSEngine *)GpNewEngine(engineSize, name, psType, &toPixels, landscape,
+    (PSEngine *)GpNewEngine(engineSize, name, &g_ps_on, &toPixels, landscape,
                             &Kill, &Clear, &Flush, &GpComposeMap,
                             &ChangePalette, &DrawLines, &DrawMarkers,
                             &DrwText, &DrawFill, &DrawCells,
@@ -1416,7 +1413,7 @@ Engine *GpPSEngine(char *name, int landscape, int mode, char *file)
 
 PSEngine *GisPSEngine(Engine *engine)
 {
-  return (engine && engine->type==psType)? (PSEngine *)engine : 0;
+  return (engine && engine->on==&g_ps_on)? (PSEngine *)engine : 0;
 }
 
 /* ------------------------------------------------------------------------ */

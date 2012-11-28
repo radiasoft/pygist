@@ -1,13 +1,12 @@
 /*
- * GTEXT.C
- *
  * $Id: gtext.c,v 1.2 2011/06/28 18:28:45 grote Exp $
- *
  * Define GIST text utilities
- *
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "gtext.h"
 

@@ -1,10 +1,13 @@
 /*
- * fpuset.c -- $Id: fpuset.c,v 1.3 2010/09/08 22:17:41 dave Exp $
+ * $Id: fpuset.c,v 1.6 2007-11-08 16:34:30 dhmunro Exp $
  * set up FPU to trap floating point exceptions
  * - this is very non-portable, not covered by ANSI C, POSIX, or even C9X
  * - if you port to a new platform (eg- Ultrix) please contact the author
- *
- * Copyright (c) 1999.  See accompanying LEGAL file for details.
+ */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
  */
 
 #ifndef FROM_FPUTEST
@@ -18,6 +21,10 @@ extern void u_fpu_setup(int when);
  *         0 after each longjmp out of interrupt handler (after setjmp)
  *         1 inside interrupt handler before signal() re-enables SIGFPE
  */
+
+#ifdef FPU_GCC_X86_64
+# define FPU_GCC_X86
+#endif
 
 #if defined(FPU_DIGITAL) || defined(FPU_ALPHA_LINUX)
 
@@ -148,9 +155,112 @@ u_fpu_setup(int when)
   }
 }
 
+#elif defined(FPU_GCC_X86)
+/* This branch is now preferred over FPU_GNU_FENV or FPU_GNU_I86 for
+ * modern Intel Pentium and AMD machines.  The GNU fenv.h extension
+ * will unmask interrupts properly, but provides no means for setting
+ * the flush-to-zero and denormals-are-zero bits required for high
+ * performance with the SSE/SSE2 floating point unit.
+ */
+# undef X86_PREFIX
+# ifdef FPU_GCC_X86_64
+#  define X86_PREFIX "r"
+# else
+#  define X86_PREFIX "e"
+# endif
+
+static unsigned int u_fpu_detect(void);
+static unsigned int u_mxcsr_mask = 0;
+static unsigned int u_fpu_features = 0x8000;
+/* 0x001   x87 fpu on chip
+ * 0x002   mmx technology
+ * 0x004   fxsave/fxrestor instructions present
+ * 0x008   sse extensions
+ * 0x010   sse2 extensions
+ * 0x020   sse3 extensions
+ * 0x040   daz supported
+ */
+static unsigned int
+u_fpu_detect(void)
+{
+  unsigned int features = 0;
+  unsigned int x, y;
+  __asm __volatile ("pushf\n\t pop %%"X86_PREFIX"ax" : "=a" (x));
+  y = x;          /* set x and y to original value of eflags */
+  x ^= 0x200000;  /* flip bit 21, ID */
+  __asm __volatile ("push %%"X86_PREFIX"ax\n\t popf" : : "a" (x));
+  __asm __volatile ("pushf\n\t pop %%"X86_PREFIX"ax" : "=a" (x));
+  if (x ^ y) {
+    unsigned long ecx, edx;
+    /* this cpu has the cpuid instruction, restore original eflags */
+    __asm __volatile ("push %%"X86_PREFIX"ax\n\t popf" : : "a" (y));
+    /* get mmx, sse related feature bits from cpuid */
+    __asm __volatile ("mov %%"X86_PREFIX"bx, %%"X86_PREFIX"si \n\t"
+                      "cpuid \n\t"
+                      "xchg %%"X86_PREFIX"bx, %%"X86_PREFIX"si"
+                      : "=c" (ecx), "=d" (edx) : "a" (1) : "si");
+    features = (edx & 1) | ((edx & 0x7800000) >> 22) | ((ecx & 1) >> 5);
+    if ((features & 0x004) && (features & 0x018)) {
+      /* get mxcsr_mask to find out if DAZ supported */
+      unsigned char pstate[528], *state;
+      int i;
+      for (state=pstate,i=0 ; i<528 ; i++) *state++ = '\0';
+      /* get a 16-byte aligned state buffer for fxsave */
+      state = pstate + 15;
+      state = ((state - (unsigned char *)0)&(~0xfL)) + (unsigned char *)0;
+      __asm __volatile ("fxsave %0" : : "m" (*state));
+      u_mxcsr_mask = *((unsigned int *)(state + 28));
+      if (!u_mxcsr_mask) u_mxcsr_mask = 0xffbf;
+      else if (u_mxcsr_mask & 0x40) features |= 0x040;
+    }
+  }
+  return features;
+}
+
+/* interrupt mask bits for x87 and sse (xmm) fpu's */
+#define U_FPU_X87CW 0x1372
+#define U_FPU_MXCSR 0x9940
+/*   bit meaning         x87      sse      yes=mask=1, no=deliver=0
+ * flush to zero          --     0x8000       yes
+ * infinity control     0x1000     --    (for 287 coprocessor compatibility)
+ * rounding control     0x0c00   0x6000        0
+ * precison control     0x0300     --    (0x0300 means 64-bit extended)
+ * precision mask       0x0020   0x1000       yes
+ * underflow mask       0x0010   0x0800       yes
+ * overflow mask        0x0008   0x0400       no
+ * zero divide mask     0x0004   0x0200       no
+ * denormal op mask     0x0002   0x0100       yes
+ * invalid op mask      0x0001   0x0080       no
+ * denormals are zero     --     0x0040       yes
+ */
+void
+u_fpu_setup(int when)
+{
+# if defined(__CYGWIN__)
+  __asm__ ("fclex" : : );
+  if (when<0) {
+# elif defined(__NeXT)
+  if (when<=0) {
+# else
+  if (when) {
+# endif
+    unsigned int fpucw = U_FPU_X87CW;
+    if (u_fpu_features == 0x8000)
+      u_fpu_features = u_fpu_detect();
+    __asm__ ("fldcw %0" : : "m" (fpucw));
+    if (u_mxcsr_mask) {
+      unsigned int mxcsr = U_FPU_MXCSR & u_mxcsr_mask;
+      __asm__ ("ldmxcsr %0" : : "m" (mxcsr));
+    }
+  }
+}
+
 #elif defined(FPU_GNU_FENV)
 
 /* GCC enhanced C9X fenv.h interface by adding feenableexcept */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
 #include <fenv.h>
 void
 u_fpu_setup(int when)
@@ -165,9 +275,19 @@ u_fpu_setup(int when)
 void
 u_fpu_setup(int when)
 {
+# if defined(__CYGWIN__)
+  __asm__ ("fclex" : : );
+  if (when<0) {
+# elif defined(__NeXT)
+  if (when<=0) {
+# else
   if (when) {
+# endif
     unsigned int fpucw = 0x1372;
+# ifndef __CYGWIN__
+    /* CygWin currently broken (20/Aug/04) so treat as FPU_IGNORE */
     __asm__ ("fldcw %0" : : "m" (fpucw));
+# endif
   }
 }
 
@@ -230,7 +350,22 @@ u_fpu_setup(int when)
 
 #elif defined(FPU_MACOSX_PPC)
 
+/* MacOS X 10.3.0, 10.3.1, and 10.3.2 (at least) shipped with
+ * broken libm (/usr/lib/libm.dylib), for which the functions
+ * sqrt, tanh, sinh cause incorrect SIGFPE for legal arguments
+ * when FPEs are enabled.  See README.fpu for more information.
+ */
+
 #include <architecture/ppc/fp_regs.h>
+
+# ifdef FPU_MACOSX_10_1
+/* for Darwin version 6.0 (MacOS X 10.2) FE0=FE1=1 initially
+ * for Darwin version 5.5 (MacOS X <=10.1) FE0=FE1=0 initially
+ * Darwin 5.5 resets MSR to FE0=FE1=0 after each SIGFPE
+ * A thread cannot set its own MSR, so we have to create a second thread
+ * to change our MSR to a value which permits FPE unmasking bits in SCR
+ * to have any effect (yuck).
+ */
 #include <mach/mach.h>
 #include <pthread.h>
 
@@ -242,11 +377,6 @@ static void *fpu_fpe_enable(void *arg);
  *  0    1    -- floating-point imprecise nonrecoverable
  *  1    0    -- floating-point imprecise recoverable
  *  1    1    -- floating-point precise mode
- */
-/* for Darwin version 6.0 (MacOS X 10.2) FE0=FE1=1 initially
- * for Darwin version 5.5 (MacOS X <=10.1) FE0=FE1=0 initially
- * Darwin 5.5 resets MSR to FE0=FE1=0 after each SIGFPE
- * Darwin 6.0 does not reset MSR?  leave MSR reset code in case?
  */
 
 /* a thread cannot get or set its own MSR bits */
@@ -264,6 +394,7 @@ fpu_fpe_enable(void *arg)
   }
   return 0;
 }
+# endif
 
 void
 u_fpu_setup(int when)
@@ -274,6 +405,10 @@ u_fpu_setup(int when)
     /* turn off exception bits to prevent immediate re-fault */
     r.fx = r.fex = r.vx = r.ox = r.ux = r.zx = r.xx = r.vx_snan = r.vx_isi =
       r.vx_idi = r.vx_zdz = r.vx_imz = r.vx_xvc = r.vx_cvi = r.vx_soft = 0;
+    /* rsvd2 is actually vx_sqrt, set by fsqrt instruction
+     * fsqrt is optional, not present on G4 and earlier Macs (but on G5)
+     */
+    r.rsvd2 = 0;
     /* these only have to be set once, but may as well set anyway */
     r.ve = 1;  /* invalid */
     r.oe = 1;  /* overflow */
@@ -286,6 +421,7 @@ u_fpu_setup(int when)
       looping &= ~1;
     }
   }
+# ifdef FPU_MACOSX_10_1
   if (when <= 0) {
     thread_t self = mach_thread_self();
     pthread_t enabler;
@@ -296,6 +432,7 @@ u_fpu_setup(int when)
       looping &= ~2;
     }
   }
+# endif
   looping = 0;
 }
 

@@ -1,11 +1,12 @@
 /*
-   DRAW0.C
-   Virtual functions for Drauing class.
-
-   $Id: draw0.c,v 1.2 2011/06/28 18:45:57 grote Exp $
+ * $Id: draw0.c,v 1.1 2005-09-18 22:04:29 dhmunro Exp $
+ * Virtual functions for Drauing class.
  */
-/*    Copyright (c) 1994.  The Regents of the University of California.
-                    All rights reserved.  */
+/* Copyright (c) 2005, The Regents of the University of California.
+ * All rights reserved.
+ * This file is part of yorick (http://yorick.sourceforge.net).
+ * Read the accompanying LICENSE file for details.
+ */
 
 #include "draw.h"
 #include "gtext.h"
