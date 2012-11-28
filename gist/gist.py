@@ -79,7 +79,7 @@ _plmk_msize = _plmk_color = _plmk_width = None
 def winkill(*N):
    """
    winkill( [n] )
-      Delete the current graphics window, or graphics window N (0-7).
+      Delete the current graphics window, or graphics window N (0-63).
    """
    if N:
       window(N[0], display="", hcp="")
