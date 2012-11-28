@@ -362,7 +362,7 @@ _ContourError = "ContourError"
 
 #  ---------------------------------------------------------------------
 def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
-   triangle = None, scale = "lin") :
+   triangle = None, scale = "lin", leveloverlap = 0.) :
    """
    plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
       triangle = None, scale = "lin")
@@ -398,6 +398,13 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
 
       Note that you may use spann to calculate your contour levels
       if you wish.
+
+      If leveloverlap is given, the upper contour of each segment is
+      extended by the specified fractional amount. This has the effect
+      that the segments will overlap each other. This is useful when
+      filled contour plots are converted to pdf - without the overlap,
+      there are small gaps between the contours where the background
+      color shows through. A recommended value is leveloverlap = 0.1.
 
       The following keywords are legal (each has a separate help entry):
     KEYWORDS: triangle, region
@@ -464,7 +471,8 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
   # Set mesh first
    plmesh (y, x, ireg, triangle = triangle)
    for i in range (n + 1) :
-      [nc, yc, xc] = contour (array ( [vc [i], vc [i + 1]]), z)
+      vcip1 = vc[i+1] + leveloverlap*(vc[i+1] - vc[i])
+      [nc, yc, xc] = contour (array ( [vc [i], vcip1]), z)
       if (is_scalar(nc) and nc == 0 or nc is None) :
          continue
       zc = (ones (len (nc)) * colors [i]).astype ('B')
