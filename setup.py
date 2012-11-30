@@ -41,6 +41,11 @@
 #  04/08/03 llc Add extra compile option -nodtk for osf1V5; needed on
 #               some of these platforms.
 #  11/08/04 mdh Add support for Mac OSX.
+#  11/29/12 dpg Extensive clean up. Now, all configure is done by the
+#               src/configure script (which is mostly copied from Yorick).
+#               libplay and gistexe are built via Makefiles
+#               The resulting object files are directly used instead of
+#               recompiling everything.
 #
 #  ---------------------------------------------------------------------
 
@@ -50,15 +55,13 @@ import os
 import os.path
 import sys
 import time
+import site
 
 from distutils.core import setup, Extension
 #from setuptools import setup, Extension
 from distutils.command.config import config
 from distutils.command.install import INSTALL_SCHEMES
-try:
-    from distutils.command.config import log
-except:
-    pass
+from distutils import sysconfig
 
 try:
     from distutils.command.build_py import build_py_2to3 as build_py
@@ -70,16 +73,19 @@ pygist_version = "1.6.1"
 pygist_maintainer = "Dave Grote"
 pygist_maintainer_email = "dpgrote@lbl.gov"
 
-cygwin = 0
-if sys.platform=='cygwin':
-    cygwin = 1
+cygwin = (sys.platform == 'cygwin')
+windows = (sys.platform == 'win32')
+darwin = (sys.platform == 'darwin')
 
-macosx = 0
+macwithcocoa = False
 # --- MAC now defaults to X11 (instead of cocoa)
-#if sys.platform=='darwin':
-#    macosx = 1
+#    macwithcocoa = (sys.platform=='darwin')
 
-if sys.platform == 'darwin':
+run_config = 'config' in sys.argv
+run_build = 'build' in sys.argv
+run_install = 'install' in sys.argv
+
+if darwin:
     # --- Machines running csh/tcsh seem to have MACHTYPE defined and this is the safest way to set -arch.
     if 'MACHTYPE' in os.environ:
         MACHTYPE = os.environ['MACHTYPE']
@@ -109,36 +115,20 @@ if sys.platform == 'darwin':
 for keyword in sys.argv:
     if keyword=='--x11':
         sys.argv.remove(keyword)
-        cygwin = 0
-        macosx = 0
+        cygwin = False
+        macwithcocoa = False
     if keyword=='--cocoa':
         sys.argv.remove(keyword)
-        if sys.platform=='darwin':
-          macosx = 1
+        if darwin:
+          macwithcocoa = True
         else:
           raise "cocoa can only be specified on darwin"
-
-windows = 0
-if sys.platform=='win32':
-    windows = 1
 
 if sys.platform=='linux2' and os.uname()[-1]=='x86_64':
     # RedHat puts the 64 bit libraries in the strange location of /usr/lib64.
     linux64 = os.access('/usr/lib64',os.F_OK)
 else:
-    linux64 = 0
-
-x11 = 0
-if not (windows or cygwin or macosx):
-    x11 = 1
-if 'NO_XLIB' in os.environ:
-    x11 = 0
-
-
-run_config = 0
-for keyword in sys.argv:
-    if keyword=='config':
-        run_config = 1
+    linux64 = False
 
 #------------------------------------------------------------------------
 # Configuration
@@ -146,585 +136,15 @@ for keyword in sys.argv:
 
 class config_pygist (config):
     def run (self):
-        try: log.set_verbosity(0)
-        except: pass
-        self.dump_source = 0
-        self.configfile = open(os.path.join("src","Make.cfg"),'w')
-        self.configfile.write('# Make.cfg from setup.py script ' + time.ctime() + '\n')
-        if not windows:
-            self.configfile.write('#')
-            for item in os.uname():
-                self.configfile.write(' '+item)
-            self.configfile.write('\n')
+        # --- Get the C compiler and flags that was used to build python
+        cc = sysconfig.get_config_var('CC')
+        ccshared = sysconfig.get_config_var('CCSHARED')
+        flags = ''
+        if cc: flags += 'CC="%s" '%cc
+        if ccshared: flags += 'CFLAGS="%s" '%ccshared
 
-        self.config_toplevel()
-        if not windows: self.config_unix()
-        if x11: self.config_x11()
-        self.configfile.close()
-        print('wrote src/Make.cfg')
-#----------------------------------------------------------------------
-    def config_toplevel(self):
-        print("  ============= begin top level configuration =============")
-
-        # check alternate libm for Alpha Linux (see play/unix/README.fpu)
-        if not 'MATHLIB' in os.environ:
-            self.mathlib = 'm'
-            testcode = """\
-/* check whether libm is broken */
-#include <math.h>
-int main(int argc, char *argv[])
-{
-  return exp(-720.) > 1.0;  /* typically an IEEE denormal */
-}
-"""
-            if self.try_link(testcode,libraries=[self.mathlib]):
-                if not self.try_run(testcode,libraries=[self.mathlib]):
-                    if self.try_link(testcode, libraries=['cpml']):
-                        self.mathlib="cpml"
-                        print("WARNING - using -lcpml instead of -lm")
-                    else:
-                        print("WARNING - libm broken? see play/unix/README.fpu")
-                        print("  if on Alpha Linux, rerun ./configure with CC='gcc -mieee'")
-            else:
-                if (os.uname()[0] == 'Darwin' and
-                    int(os.uname()[2].split('.')[0]) == 11):
-                    raise Exception("math library may be missing; also, check the permissions of /usr/local - it needs to be world readable. After fixing the permissions, rerun setup.py")
-                else:
-                    raise Exception("math library missing; rerun setup.py after setting the MATHLIB env variable")
-        else:
-            self.mathlib=os.environ['MATHLIB']
-        self.configfile.write('MATHLIB=-l'+self.mathlib+'\n')
-        # check exp10 presence, emulate otherwise
-        testcode = """\
-int main(int argc, char *argv[])
-{
-  double x=exp10(3.);
-  return (x<999.999)||(x>1000.001);
-}
-"""
-        if self.try_link(testcode,libraries=[self.mathlib]):
-            print("using exp10 found in libm")
-            self.configfile.write("NO_EXP10=\n")
-        else:
-            print("libm does not contain exp10, will emulate")
-            self.configfile.write("NO_EXP10=-DNO_EXP10\n")
-        if sys.platform == 'darwin' and MACHTYPE in ['i386','x86_64']:
-            # there is probably a better way to do this, but here goes...
-            self.configfile.write("RANLIB=ranlib\n")
-#----------------------------------------------------------------------
-    def config_unix(self):
-        # begin play/unix configuration
-        print()
-        print("  ============= begin play/unix configuration =============")
-        print()
-        os.chdir(os.path.join('src','play','unix'))
-        configfile = open('config.h','w')
-        configfile.write('/* config.h used during config.sh script */\n')
-        configfile.write('#ifndef CONFIG_SCRIPT\n')
-        configfile.write('# error destroy this config.h and rerun configure script\n')
-        configfile.write('#endif\n')
-        configfile.close()
-        configfile = open('config.0h','w')
-        configfile.write('/* config.h from config.sh script ' + time.ctime() + '\n')
-        configfile.write(' *')
-        for item in os.uname():
-            configfile.write(' '+item)
-        configfile.write('\n')
-        configfile.write(' */\n')
-        self.fatality = 0
-        if not cygwin:
-            self.find_time(configfile)
-            self.find_wall_time(configfile)
-            self.find_sigfpe(configfile)
-        self.find_user_name(configfile)
-        self.find_tiocgpgrp(configfile)
-        self.find_cwd(configfile)
-        self.find_dirent(configfile)
-        self.find_poll(configfile)
-
-        if self.fatality:
-            print("*** at least one play/unix component could not be configured")
-            print("*** see configuration notes in play/unix/README.cfg")
-        else:
-            configfile.close()
-            os.rename("config.0h","config.h")
-            print("wrote src/play/unix/config.h")
-
-        os.chdir(os.path.join('..','..','..'))
-        print()
-        print("  ============== end play/unix configuration ==============")
-        
-    def find_time(self,configfile):
-        # find CPU time function (getrusage is best if present)
-        testcode = """\
-/* check settings of: USE_GETRUSAGE USE_TIMES */
-#define CONFIG_SCRIPT
-#include "timeu.c"
-int
-main(int argc, char *argv[])
-{
-  double s;
-  double t = p_cpu_secs(&s);
-  return 0;
-}
-"""
-        if self.try_link("#define USE_GETRUSAGE\n"+testcode,include_dirs=[".."]):
-            print("using getrusage() (CPU timer)")
-            configfile.write('#define USE_GETRUSAGE\n')
-        elif self.try_link("#define USE_TIMES\n"+testcode,include_dirs=[".."]):
-            print("using times() (CPU timer)")
-            configfile.write('#define USE_TIMES\n')
-        elif self.try_link(testcode,include_dirs=[".."]):
-            print("fallback to clock(), getrusage() and times() missing (CPU timer)")
-        else:
-            print("FATAL getrusage(), times(), and clock() all missing (timeu.c)")
-            self.fatality = 1
-
-    def find_wall_time(self,configfile):
-        # find wall time function (gettimeofday is best if present)
-        testcode = """\
-/* check settings of: USE_GETTIMEOFDAY */
-#define CONFIG_SCRIPT
-#include "timew.c"
-int
-main(int argc, char *argv[])
-{
-  double t = p_wall_secs();
-  return 0;
-}
-"""
-        if self.try_link("#define USE_GETTIMEOFDAY\n"+testcode,include_dirs=[".."]):
-            print("using gettimeofday() (wall timer)")
-            configfile.write('#define USE_GETTIMEOFDAY\n')
-        elif self.try_link(testcode,include_dirs=[".."]):
-            print("fallback to time()+difftime(), gettimeofday() missing (wall timer)")
-        else:
-            print("FATAL gettimeofday(), and time() or difftime() missing (timew.c)")
-            self.fatality = 1
-
-    def find_sigfpe(self,configfile):
-#----------------------------------------------------------------------
-# try to figure out how to get SIGFPE delivered
-#----------------------------------------------------------------------
-        if sys.platform=='cygwin':
-            # No SIGFPE delivery on Windows.
-            print('hardwiring #define FPU_IGNORE')
-            configfile.write('#define FPU_IGNORE\n')
-            return
-
-        testcode="""\
-#define CONFIG_SCRIPT
-#include "fputest.c"
-"""
-
-        testgcc="""\
-#define CONFIG_SCRIPT
-#include "config.c"
-"""
-
-        fpedef=""
-        fpelib=""
-        fpelibm=""
-        if self.try_link("#define FPU_DIGITAL\n"+testcode):
-            print("using FPU_DIGITAL (SIGFPE delivery)")
-            configfile.write('#define FPU_DIGITAL\n')
-            fpedef = "-DFPU_DIGITAL"
-        elif self.try_link("#define FPU_AIX\n"+testcode):
-            print("using FPU_AIX (SIGFPE delivery)")
-            configfile.write('#define FPU_AIX\n')
-            fpedef = "-DFPU_AIX"
-        elif self.try_link("#define FPU_HPUX\n"+testcode):
-            print("using FPU_HPUX (SIGFPE delivery)")
-            configfile.write('#define FPU_HPUX\n')
-            fpedef = "-DFPU_HPUX"
-            fpelibm = self.mathlib
-        elif self.try_link("#define FPU_SOLARIS\n"+testcode):
-            print("using FPU_SOLARIS (SIGFPE delivery)")
-            configfile.write('#define FPU_SOLARIS\n')
-            fpedef="-DFPU_SOLARIS"
-            # note this works under IRIX 6.3, while FPU_IRIX does not??
-        elif self.try_link("#define FPU_SUN4\n"+testcode,libraries=[self.mathlib]):
-            print("using FPU_SUN4 (-lm) (SIGFPE delivery)")
-            configfile.write('#define FPU_SUN4\n')
-            fpedef="-DFPU_SUN4"
-            fpelibm=self.mathlib
-        elif self.try_link("#define FPU_SUN4\n"+testcode,libraries=["sunmath"]):
-            print("using FPU_SUN4 (-lsunmath) (SIGFPE delivery)")
-            configfile.write('#define FPU_SUN4\n')
-            fpedef="-DFPU_SUN4"
-            fpelib="sunmath"
-        elif self.try_link("#define FPU_IRIX\n"+testcode,libraries=["fpe"]):
-            # FPU_SOLARIS seems to work better??
-            print("using FPU_IRIX (SIGFPE delivery)")
-            configfile.write('#define FPU_IRIX\n')
-            fpedef="-DFPU_IRIX"
-            fpelib="fpe"
-        elif self.try_link("#define FPU_IRIX\n"+testcode):
-            print("using FPU_IRIX (SIGFPE delivery), but no libfpe??")
-            configfile.write('#define FPU_IRIX\n')
-            fpedef="-DFPU_IRIX"
-        elif self.try_link("#define FPU_MACOSX_PPC\n"+testcode):
-            print("using FPU_MACOSX_PPC (SIGFPE delivery)")
-            configfile.write('#define FPU_MACOSX_PPC\n')
-            fpedef="-DFPU_MACOSX_PPC"
-        elif self.try_link("#define FPU_MACOSX_INTEL\n"+testcode):
-            print("using FPU_MACOSX_INTEL (SIGFPE delivery)")
-            configfile.write('#define FPU_MACOSX_INTEL\n')
-            fpedef="-DFPU_MACOSX_INTEL"
-        elif self.try_compile("#define TEST_GCC\n"+testgcc):
-            if self.try_link("#define FPU_ALPHA_LINUX\n" + testcode):
-                print("using FPU_ALPHA_LINUX (SIGFPE delivery)")
-                configfile.write('#define FPU_ALPHA_LINUX\n')
-                fpedef="-DFPU_ALPHA_LINUX"
-                print("...libm may be broken -- read play/unix/README.fpu for more")
-                print("...fputest failure may not mean that pygist itself is broken")
-                # CC="$CC -mfp-trap-mode=su -mtrap-precision=i"
-            elif self.try_link("#define FPU_GCC_I86\n" + testcode):
-                print("using FPU_GCC_I86 (SIGFPE delivery)")
-                configfile.write('#define FPU_GCC_I86\n')
-                fpedef="-DFPU_GCC_I86"
-            elif self.try_link("#define FPU_GCC_SPARC\n" + testcode):
-                print("using FPU_GCC_SPARC (SIGFPE delivery)")
-                configfile.write('#define FPU_GCC_SPARC\n')
-                fpedef="-DFPU_GCC_SPARC"
-            elif self.try_link("#define FPU_GCC_M86K\n" + testcode):
-                print("using FPU_GCC_M68K (SIGFPE delivery)")
-                configfile.write('#define FPU_GCC_M68K\n')
-                fpedef="-DFPU_GCC_M68K"
-            elif self.try_link("#define FPU_GCC_POWERPC\n" + testcode):
-                print("using FPU_GCC_POWERPC (SIGFPE delivery)")
-                configfile.write('#define FPU_GCC_POWERPC\n')
-                fpedef="-DFPU_GCC_POWERPC"
-            elif self.try_link("#define FPU_GCC_ARM\n" + testcode):
-                print("using FPU_GCC_ARM (SIGFPE delivery)")
-                configfile.write('#define FPU_GCC_ARM\n')
-                fpedef="-DFPU_GCC_ARM"
-        elif self.try_link("#define FPU_GNU_FENV \n" + testcode, libraries=[self.mathlib]):
-            print("using FPU_GNU_FENV (SIGFPE delivery)")
-            configfile.write('#define FPU_GNU_FENV\n')
-            fpedef="-DFPU_GNU_FENV"
-            fpelibm=self.mathlib
-        elif self.try_link("#define FPU_UNICOS\n" + testcode, libraries=[self.mathlib]):
-            print("using FPU_UNICOS (SIGFPE delivery)")
-            self.configfile.write('#define FPU_UNICOS\n')
-            fpedef="-DFPU_UNICOS"
-            fpelibm=self.mathlib
-
-        if "fpedef" in os.environ:
-            if self.try_link("#define FPU_IGNORE\n" + testcode, libraries=[self.mathlib]):
-                print("using FPU_IGNORE (SIGFPE delivery)")
-                configfile.write('#define FPU_IGNORE\n')
-                fpedef="-DFPU_IGNORE"
-            else:
-                print("FATAL unable to build SIGFPE fputest? (fputest.c, fpuset.c)")
-                self.fatality=1
-
-        if fpelib:
-            self.configfile.write("FPELIB="+fpelib+"\n")
-        else:
-            self.configfile.write("FPELIB=\n")
-
-        if fpelibm:
-            self.configfile.write("FPELIBM="+fpelibm+"\n")
-        else:
-            self.configfile.write("FPELIBM=\n")
-
-        if fpedef:
-            # on IRIX be sure that TRAP_FPE environment variable is turned off
-            if "TRAP_FPE" in os.environ: del os.environ["TRAP_FPE"]
-            testcode = "#define " + fpedef[2:] + "\n" + testcode
-            libraries = []
-            if fpelib: libraries.append(fpelib)
-            if fpelibm: libraries.append(fpelibm)
-            if not self.try_run(testcode,libraries=libraries):
-                print()
-                print("*************************WARNING***************************")
-                print("*** play/unix configuration failed to get SIGFPE delivered")
-                print("*** read the notes in play/unix/README.fpu")
-                print("*************************WARNING***************************")
-                print()
-
-    def find_user_name(self,configfile):
-        # find function to get user name
-        testcode = """\
-/* check settings of: NO_PASSWD */
-#define CONFIG_SCRIPT
-#include "usernm.c"
-int
-main(int argc, char *argv[])
-{
-  int value;
-  char *u = p_getuser(); \
-  value = (u!=0);
-  return value;
-}
-"""
-        if self.try_link(testcode,include_dirs=[".."]):
-            print("using POSIX getlogin(), getpwuid(), getuid() functions")
-        elif self.try_link("#define USE_PASSWD\n"+testcode,include_dirs=[".."]):
-            print("fallback to cuserid(), POSIX getlogin() family missing")
-            configfile.write('#define NO_PASSWD\n')
-        else:
-            print("FATAL cuserid(), POSIX getlogin() family both missing (usernm.c)")
-            self.fatality = 1
-
-    def find_tiocgpgrp(self, configfile):
-        # find function to get controlling terminal process group
-        testcode = """\
-/* check settings of: USE_TIOCGPGRP_IOCTL */
-#define CONFIG_SCRIPT
-#include "uinbg.c"
-int
-main(int argc, char *argv[])
-{
-  int value;
-  value = u_in_background();
-  return value;
-}
-"""
-        if self.try_compile(testcode,include_dirs=[".."]):
-            pass
-        elif self.try_compile("#define USE_POSIX_GETPGRP\n"+testcode,include_dirs=[".."]):
-            print("using strict POSIX getpgrp prototype")
-            testcode = "#define USE_POSIX_GETPGRP\n" + testcode
-            configfile.write('#define USE_POSIX_GETPGRP\n')
-        if self.try_link(testcode,include_dirs=[".."]):
-            print("using POSIX tcgetpgrp() function")
-        elif self.try_link('#define USE_TIOCGPGRP_IOCTL=<sys/termios.h>\n'+testcode,include_dirs=[".."]):
-            print("fallback to TIOCGPGRP in sys/termios.h, POSIX tcgetpgrp() missing")
-            configfile.write('#define USE_TIOCGPGRP_IOCTL <sys/termios.h>\n')
-        elif self.try_link('#define USE_TIOCGPGRP_IOCTL=<sgtty.h>\n'+testcode,include_dirs=[".."]):
-            print("fallback to TIOCGPGRP in sgtty.h, POSIX tcgetpgrp() missing")
-            configfile.write('#define USE_TIOCGPGRP_IOCTL <sgtty.h>\n')
-        else:
-            print("FATAL unable to find TIOCGPGRP ioctl header (uinbg.c)")
-            print("  (you can patch config.0h by hand if you know header)")
-            configfile.write('#define USE_TIOCGPGRP_IOCTL <???>\n')
-            self.fatality = 1
-
-    def find_cwd(self, configfile):
-        # find function to get current working directory
-        testcode = """\
-/* check settings of: USE_GETWD */
-#define CONFIG_SCRIPT
-#include <unistd.h>
-static char dirbuf[1024];
-#ifdef USE_GETWD
-#define getcwd(x,y) getwd(x)
-#endif
-int
-main(int argc, char *argv[])
-{
-  int value;
-  char *u = getcwd(dirbuf, 1024);
-  value = (u!=0);
-  return value;
-}
-"""
-        if self.try_link(testcode):
-            print("using POSIX getcwd() function")
-        elif self.try_link("#define USE_GETWD\n"+testcode):
-            print("fallback to getwd(), POSIX getcwd() missing")
-            configfile.write('#define USE_GETWD\n')
-        else:
-            print("FATAL getcwd(), getwd() both missing (dir.c)")
-            self.fatality=1
-
-    def find_dirent(self, configfile):
-        # find headers required to read directories
-        testcode = """\
-/* check settings of: DIRENT_HEADER USE_GETWD */
-#define TEST_DIRENT
-#define CONFIG_SCRIPT
-#include "dir.c"
-p_twkspc p_wkspc;
-int
-main(int argc, char *argv[])
-{
-  int value;
-  p_dir *d = p_dopen("no/such/thing");
-  char *l = p_dnext(d, &value);
-  value = p_chdir(l) || p_rmdir(l) || p_mkdir(l);
-  return value;
-}
-"""
-        if self.try_link(testcode,include_dirs=[".."]):
-            print("using POSIX dirent.h header for directory ops")
-        elif self.try_link('#define DIRENT_HEADER=<sys/dir.h>\n'+testcode,include_dirs=[".."]):
-            print("using sys/dir.h header for directory ops")
-            configfile.write('#define DIRENT_HEADER <sys/dir.h>\n')
-        elif self.try_link('#define DIRENT_HEADER=<sys/ndir.h>\n'+testcode,include_dirs=[".."]):
-            print("using sys/ndir.h header for directory ops")
-            configfile.write('#define DIRENT_HEADER <sys/ndir.h>')
-        elif self.try_link('#define DIRENT_HEADER=<ndir.h>\n'+testcode,include_dirs=[".."]):
-            print("using ndir.h header for directory ops")
-            configfile.write('#define DIRENT_HEADER <ndir.h>')
-        else:
-            print("FATAL dirent.h, sys/dir.h, sys/ndir.h, ndir.h all missing (dir.c)")
-            self.fatality=1
-
-    def find_poll(self,configfile):
-        # find headers and functions required for poll/select functionality
-        testcode = """\
-/* check settings of: USE_SYS_POLL_H USE_SELECT HAVE_SYS_SELECT_H
-                      NO_SYS_TIME_H NEED_SELECT_PROTO */
-#define CONFIG_SCRIPT
-#define TEST_POLL
-#include "uevent.c"
-int
-main(int argc, char *argv[])
-{
-  int p = u_poll(1000); \
-  return 0;
-}
-"""
-        if self.try_link('#define USE_SELECT\n'+'#define HAVE_SYS_SELECT_H\n'+testcode,include_dirs=[".."]):
-            print("using select(), sys/select.h header")
-            configfile.write('#define USE_SELECT\n')
-            configfile.write('#define HAVE_SYS_SELECT_H\n')
-        elif self.try_link('#define USE_SELECT\n'+'#define NEED_SELECT_PROTO\n'+testcode,include_dirs=[".."]):
-            print("using select(), sys/time.h, sys/types.h headers")
-            configfile.write('#define USE_SELECT\n')
-            configfile.write('#define NEED_SELECT_PROTO\n')
-        elif self.try_link('#define USE_SELECT\n'+'#define NO_SYS_TIME_H\n'+'#define NEED_SELECT_PROTO\n'+testcode,include_dirs=[".."]):
-            print("using select(), time.h, sys/types.h headers")
-            configfile.write('#define USE_SELECT\n')
-            configfile.write('#define NO_SYS_TIME_H\n')
-            configfile.write('#define NEED_SELECT_PROTO\n')
-        elif  self.try_link('#define USE_SELECT\n'+testcode,include_dirs=[".."]):
-            print("using select(), sys/time.h header")
-            configfile.write('#define USE_SELECT')
-        elif  self.try_link('#define USE_SELECT\n'+'#define NO_SYS_TIME_H\n'+testcode,include_dirs=[".."]):
-            print("using select(), time.h header")
-            configfile.write('#define USE_SELECT\n')
-            configfile.write('#define NO_SYS_TIME_H\n')
-        elif self.try_link(testcode,include_dirs=[".."]):
-            print("using poll(), poll.h header")
-        elif self.try_link('#define USE_SYS_POLL_H\n'+testcode,include_dirs=[".."]):
-            print("using poll(), sys/poll.h header")
-            configfile.write('#define USE_SYS_POLL_H\n')
-        else:
-            print("FATAL neither poll() nor select() usable? (uevent.c, upoll.c)")
-            self.fatality=1
-#----------------------------------------------------------------------
-    def config_x11(self):
-        print()
-        print("  ============= begin play/x11 configuration ==============")
-        print()
-        self.fatality=0
-
-        # figure out directories to compile and load with X11
-        if 'X11BASE' in os.environ:
-            X11BASE=os.environ['X11BASE']
-        else:
-            X11BASE="/no/suggested/x11dir"
-
-        # directory list is from autoconf, except openwin promoted near top
-        xlist = [X11BASE+"/include",
-                 "/usr/X11R6/include",
-                 "/usr/X11R5/include",
-                 "/usr/X11R4/include",
-                 "/usr/include/X11R6",
-                 "/usr/include/X11R5",
-                 "/usr/include/X11R4",
-                 "/usr/openwin/include",
-                 "/usr/openwin/share/include",
-                 "/usr/local/X11R6/include",
-                 "/usr/local/X11R5/include",
-                 "/usr/local/X11R4/include",
-                 "/usr/local/include/X11R6",
-                 "/usr/local/include/X11R5",
-                 "/usr/local/include/X11R4",
-                 "/usr/X11/include",
-                 "/usr/include/X11",
-                 "/usr/local/X11/include"
-                 "/usr/local/include/X11",
-                 "/usr/X386/include",
-                 "/usr/x386/include",
-                 "/usr/XFree86/include/X11",
-                 "/usr/include",
-                 "/usr/local/include",
-                 "/usr/unsupported/include",
-                 "/usr/athena/include",
-                 "/usr/local/x11r5/include",
-                 "/usr/lpp/Xamples/include"]
-        testcode = """\
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <X11/Xatom.h>
-#include <X11/cursorfont.h>
-extern XVisualInfo xvi;
-XVisualInfo xvi;             /* XVisualInfo declared in Xutil.h */
-int main(int argc, char *argv[])
-{
-  Display *dpy = XOpenDisplay("nosuchserver:0.0");
-  xvi.screen = XK_BackSpace;  /* XK_BackSpace defined in keysym.h */
-  xvi.red_mask = XA_PRIMARY;  /* XA_PRIMARY defined in Xatom.h */
-  xvi.depth = XC_crosshair;   /* XC_crosshair defined in cursorfont.h */
-  XCloseDisplay(dpy);
-  return 0;
-}
-"""
-        xinc = ""
-        xlib = ""
-        xfound = 0
-        if linux64:
-            libpath = "lib64"
-        else:
-            libpath = "lib"
-        if self.try_compile(testcode):
-            xfound=1
-        else:
-            for d in xlist:
-                if os.path.exists(d+'/X11/Xlib.h'):
-                    if self.try_compile(testcode,include_dirs=[d]):
-                        xfound = 1
-                        xinc = d
-                        xlib = d.replace("include",libpath)
-                        break
-        if not xfound:
-            print("FATAL unable to find X11 includes (play/x11) $xinc")
-            self.fatality=1
-        else:
-            if self.try_link(testcode,include_dirs=[xinc],libraries=['X11']):
-                xlib=""
-                xfound=2
-            elif xlib and self.try_link(testcode,include_dirs=[xinc],library_dirs=[xlib],libraries=['X11']):
-                xfound=2
-            else:
-                xlist = [directory.replace('include',libpath) for directory in xlist]
-                if xinc:
-                    for d in xlist:
-                        if self.try_link(testcode,include_dirs=[xinc],library_dirs=[d],libraries=['X11']):
-                            xlib = d
-                            xfound=2
-                            break
-                else:
-                    for d in xlist:
-                        if self.try_link(testcode,library_dirs=[d],libraries=['X11']):
-                            xlib = d
-                            xfound=2
-                            break
-        if xfound:
-            print("found X Window System, X11 headers and libraries")
-            if xinc:
-                    print("  - using X11 header switch -I"+xinc)
-            else:
-                    print("  - using X11 header switch [none]")
-            print("  - using X11 loader switch -L"+xlib)
-        else:
-            print("FATAL unable to find X11 libraries (play/x11) $xlib")
-            self.fatality=1
-        if xinc:
-            self.configfile.write("XINC=-I"+xinc+"\n")
-        else:
-            self.configfile.write("XINC=\n")
-        self.configfile.write("XLIB=-L"+xlib+"\n")
-
-        print("appended to ../../Make.cfg")
-        print()
-        print("  ============== end play/x11 configuration ===============")
+        # --- Allow the standard configure script to do all of the work.
+        os.system('cd src;%s ./configure'%flags)
 
 #------------------------------------------------------------------------
 # Installation
@@ -750,144 +170,126 @@ gfiles = ["src/g/README",
           "src/g/work2.gs",
           "src/g/yarg.gp"]
 
-gistsource = ["src/gist/gist.c",
-              "src/gist/tick.c",
-              "src/gist/tick60.c",
-              "src/gist/engine.c",
-              "src/gist/gtext.c",
-              "src/gist/draw.c",
-              "src/gist/draw0.c",
-              "src/gist/clip.c",
-              "src/gist/gread.c",
-              "src/gist/gcntr.c",
-              "src/gist/hlevel.c",
-              "src/gist/ps.c",
-              "src/gist/cgm.c",
-              "src/gist/xfancy.c",
-              "src/gist/xbasic.c",
-              "src/gist/style.c"]
+macsource = ["src/play/mac/pscr.m",
+             "src/play/mac/pals.m",
+             "src/play/mac/text.m",
+             "src/play/mac/cell.m",
+             "src/play/mac/bitblt.m",
+             "src/play/mac/points.m",
+             "src/play/mac/cursors.m",
+             "src/play/mac/pwin.m",
+             "src/play/mac/clips.m",
+             "src/play/mac/pen.m",
+             "src/play/mac/color.m",
+             "src/play/mac/font.m"]
 
-if cygwin:
-    unixsource = ["src/play/unix/dir.c",
-                  "src/play/unix/files.c",
-                  "src/play/unix/pathnm.c",
-                  "src/play/unix/slinks.c",
-                  "src/play/unix/stdinit.c",
-                  "src/play/unix/uevent.c",
-                  "src/play/unix/uinbg.c",
-                  "src/play/unix/usernm.c"]
-elif macosx:
-    unixsource = ["src/play/unix/dir.c",
-                  "src/play/unix/files.c",
-                  "src/play/unix/pathnm.c",
-                  "src/play/unix/timew.c",
-                  "src/play/unix/slinks.c",
-                  "src/play/unix/stdinit.c",
-                  "src/play/unix/uevent.c",
-                  "src/play/unix/uinbg.c",
-                  "src/play/unix/usernm.c"]
-elif not (windows):
-    unixsource = ["src/play/unix/dir.c",
-                  "src/play/unix/files.c",
-                  "src/play/unix/fpuset.c",
-                  "src/play/unix/pathnm.c",
-                  "src/play/unix/timew.c",
-                  "src/play/unix/uevent.c",
-                  "src/play/unix/ugetc.c",
-                  "src/play/unix/umain.c",
-                  "src/play/unix/usernm.c",
-                  "src/play/unix/slinks.c"]
+gistobjects = ['src/gist/gist.o',
+               'src/gist/tick.o',
+               'src/gist/tick60.o',
+               'src/gist/engine.o',
+               'src/gist/gtext.o',
+               'src/gist/draw.o',
+               'src/gist/draw0.o',
+               'src/gist/clip.o',
+               'src/gist/gread.o',
+               'src/gist/gcntr.o',
+               'src/gist/hlevel.o',
+               'src/gist/ps.o',
+               'src/gist/cgm.o',
+               'src/gist/xfancy.o',
+               'src/gist/xbasic.o']
 
-if not (windows or cygwin or macosx):
-    x11source = ["src/play/x11/colors.c",
-                 "src/play/x11/connect.c",
-                 "src/play/x11/cursors.c",
-                 "src/play/x11/errors.c",
-                 "src/play/x11/events.c",
-                 "src/play/x11/fills.c",
-                 "src/play/x11/fonts.c",
-                 "src/play/x11/images.c",
-                 "src/play/x11/lines.c",
-                 "src/play/x11/pals.c",
-                 "src/play/x11/pwin.c",
-                 "src/play/x11/resource.c",
-                 "src/play/x11/rgbread.c",
-                 "src/play/x11/textout.c",
-                 "src/play/x11/rect.c",
-                 "src/play/x11/clips.c",
-                 "src/play/x11/points.c"]
+unixobjects = ['src/play/unix/dir.o',
+               'src/play/unix/files.o',
+               'src/play/unix/fpuset.o',
+               'src/play/unix/handler.o',
+               'src/play/unix/pathnm.o',
+               'src/play/unix/slinks.o',
+               'src/play/unix/stdinit.o',
+               'src/play/unix/timeu.o',
+               'src/play/unix/timew.o',
+               'src/play/unix/udl.o',
+               'src/play/unix/uevent.o',
+               'src/play/unix/ugetc.o',
+               'src/play/unix/uinbg.o',
+               'src/play/unix/usernm.o',
+               'src/play/unix/umain.o',
+               'src/play/unix/uspawn.o']
 
-if windows:
-    winsource = ["src/play/win/pscr.c",
-                 "src/play/win/pals.c",
-                 "src/play/win/ptext.c",
-                 "src/play/win/pfill.c",
-                 "src/play/win/pcell.c",
-                 "src/play/win/pmin.c",
-                 "src/play/win/plines.c",
-                 "src/play/win/prect.c",
-                 "src/play/win/points.c",
-                 "src/play/win/cursors.c",
-                 "src/play/win/pwin.c",
-                 "src/play/win/timew.c",
-                 "src/play/win/clips.c",
-                 "src/play/win/getdc.c",
-                 "src/play/win/files.c",
-                 "src/play/win/usernm.c",
-                 "src/play/win/pathnm.c"]
-elif cygwin:
-    winsource = ["src/play/win/pscr.c",
-                 "src/play/win/pals.c",
-                 "src/play/win/ptext.c",
-                 "src/play/win/pfill.c",
-                 "src/play/win/pcell.c",
-                 "src/play/win/pmin.c",
-                 "src/play/win/plines.c",
-                 "src/play/win/prect.c",
-                 "src/play/win/points.c",
-                 "src/play/win/cursors.c",
-                 "src/play/win/pwin.c",
-                 "src/play/win/timew.c",
-                 "src/play/win/clips.c",
-                 "src/play/win/getdc.c"]
-elif macosx:
-    macsource = ["src/play/mac/pscr.m",
-                 "src/play/mac/pals.m",
-                 "src/play/mac/text.m",
-                 "src/play/mac/cell.m",
-                 "src/play/mac/bitblt.m",
-                 "src/play/mac/points.m",
-                 "src/play/mac/cursors.m",
-                 "src/play/mac/pwin.m",
-                 "src/play/mac/clips.m",
-                 "src/play/mac/pen.m",
-                 "src/play/mac/color.m",
-                 "src/play/mac/font.m"]
+x11objects = ['src/play/x11/colors.o',
+              'src/play/x11/connect.o',
+              'src/play/x11/cursors.o',
+              'src/play/x11/errors.o',
+              'src/play/x11/events.o',
+              'src/play/x11/feep.o',
+              'src/play/x11/fills.o',
+              'src/play/x11/fonts.o',
+              'src/play/x11/images.o',
+              'src/play/x11/lines.o',
+              'src/play/x11/pals.o',
+              'src/play/x11/pwin.o',
+              'src/play/x11/resource.o',
+              'src/play/x11/rgbread.o',
+              'src/play/x11/textout.o',
+              'src/play/x11/rect.o',
+              'src/play/x11/ellipse.o',
+              'src/play/x11/clips.o',
+              'src/play/x11/points.o']
 
-anysource = ["src/play/any/hash.c",
-             "src/play/any/hash0.c",
-             "src/play/any/mm.c",
-             "src/play/any/alarms.c",
-             "src/play/any/pstrcpy.c",
-             "src/play/any/pstrncat.c",
-             "src/play/any/p595.c",
-             "src/play/any/bitrev.c",
-             "src/play/any/bitlrot.c",
-             "src/play/any/bitmrot.c",
-             "src/play/any/pstdio.c"]
+winobjects = ['src/play/win/dir.o',
+              'src/play/win/files.o',
+              'src/play/win/handler.o',
+              'src/play/win/sigansi.o',
+              'src/play/win/pathnm.o',
+              'src/play/win/conterm.o',
+              'src/play/win/timeu.o',
+              'src/play/win/timew.o',
+              'src/play/win/usernm.o',
+              'src/play/win/wpoll.o',
+              'src/play/win/wdl.o',
+              'src/play/win/wstdio.o',
+              'src/play/win/cygapp.o',
+              'src/play/win/cygmain.o',
+              'src/play/win/clips.o',
+              'src/play/win/cursors.o',
+              'src/play/win/ellipse.o',
+              'src/play/win/feep.o',
+              'src/play/win/getdc.o',
+              'src/play/win/pals.o',
+              'src/play/win/pcell.o',
+              'src/play/win/pfill.o',
+              'src/play/win/plines.o',
+              'src/play/win/points.o',
+              'src/play/win/prect.o',
+              'src/play/win/pscr.o',
+              'src/play/win/ptext.o',
+              'src/play/win/pwin.o',
+              'src/play/win/wspawn.o']
+
+anyobjects = ['src/play/any/hash.o',
+              'src/play/any/hash0.o',
+              'src/play/any/hashctx.o',
+              'src/play/any/hashid.o',
+              'src/play/any/mm.o',
+              'src/play/any/mminit.o',
+              'src/play/any/alarms.o',
+              'src/play/any/pmemcpy.o',
+              'src/play/any/pstrcpy.o',
+              'src/play/any/pstrncat.o',
+              'src/play/any/p595.o',
+              'src/play/any/bitrev.o',
+              'src/play/any/bitlrot.o',
+              'src/play/any/bitmrot.o',
+              'src/play/any/pstdio.o']
 
 if windows:
-    playsource = winsource + anysource
+    playobjects = winobjects + anyobjects + gistobjects
 elif cygwin:
-    playsource = unixsource + winsource + anysource
-elif macosx:
-    playsource = unixsource + macsource + anysource
+    playobjects = unixobjects + winobjects + anyobjects + gistobjects
+elif macwithcocoa:
+    playobjects = unixobjects + anyobjects + gistobjects
 else:
-    playsource = unixsource + x11source + anysource
-
-source = ['src/gistCmodule.c'] + gistsource + playsource
-
-# define default include directory, library paths, and libraries.
+    playobjects = unixobjects + x11objects + anyobjects + gistobjects
 
 gistpath = os.path.join(sys.prefix,"g")
 gistpath = gistpath.replace('\\','\\\\\\\\')
@@ -906,13 +308,13 @@ if windows or cygwin:
     extra_compile_args.append("-DWINDOWS")
     extra_compile_args.append("-mwindows")
     extra_link_args.append("-mwindows")
-if macosx:
+if macwithcocoa:
     extra_link_args.append('-framework')
     extra_link_args.append('Cocoa')
 
-include_dirs = [ 'src/gist', 'src/play', 'src/play/unix' ]
+include_dirs = []
 
-if windows or cygwin or macosx:
+if windows or cygwin or macwithcocoa:
     libraries = []
 else:
     libraries = ['X11']
@@ -941,7 +343,7 @@ elif sys.platform == 'linux2':
     else:
         library_dirs=['.','src', '/usr/lib']
 
-elif sys.platform == 'cygwin':
+elif cygwin:
     library_dirs=['.','src', '/usr/lib']
 
 elif sys.platform == "sunos5":
@@ -968,18 +370,15 @@ if not run_config:
             # remove the -l
             mathlib = mathlib[2:]
             libraries.append(mathlib)
-        if line[:9]=="NO_EXP10=":
-            no_exp10 = line[9:-1] # removing \n
-            if no_exp10: extra_compile_args.append(no_exp10)
         if line[:5]=="XINC=":
             xinc = line[5:-1] # removing \n
-            if xinc and not (windows or cygwin or macosx):
+            if xinc and not (windows or cygwin or macwithcocoa):
                 # remove the -I
                 xinc = xinc[2:]
                 if xinc: include_dirs.append(xinc)
         if line[:5]=="XLIB=":
             xlib = line[5:-1] # removing \n
-            if xlib and not (windows or cygwin or macosx):
+            if xlib and not (windows or cygwin or macwithcocoa):
                 # remove the -L
                 xlib = xlib[2:]
                 library_dirs.append(xlib)
@@ -991,7 +390,7 @@ include_dirs.append(numpy.get_include())
 # --- With this, the data_files listed in setup will be installed in
 # --- the usual place in site-packages.
 for scheme in INSTALL_SCHEMES.values():
-    if sys.platform == "darwin":
+    if darwin:
         # --- A special hack is needed for darwin. In dist_utils/command/install.py, install_purelib
         # --- is modified to the form below, but install_data is not. Without this hack, the data files
         # --- would be installed in the Python directory in /System/Library, which is not by default
@@ -1000,15 +399,28 @@ for scheme in INSTALL_SCHEMES.values():
     else:
         scheme['data'] = scheme['platlib']
 
-# Now we know everything needed to define the extension module
+# --- Build the gist and play objects by directly using the nice Makefile
+# --- developed in Yorick.
+if run_build or run_install:
+    os.system('cd src;make libplay')
+    os.system('cd src;make gistexe')
 
-print(library_dirs)
+source = ['src/gistCmodule.c']
+include_dirs.append('src/play')
+include_dirs.append('src/gist')
+
+if macwithcocoa:
+    source += macsource
+    include_dirs.append('src/play/mac')
+
+# Now we know everything needed to define the extension module
 
 extension = Extension ( 'gist.gistC',
                         source,
                         include_dirs=include_dirs,
                         library_dirs=library_dirs,
                         libraries=libraries,
+                        extra_objects=playobjects,
                         extra_compile_args=extra_compile_args,
                         extra_link_args=extra_link_args)
 
@@ -1027,8 +439,19 @@ setup (
           packages = ['gist'],
           package_dir = {'gist': 'gist'},
           #extra_path = 'gist',
-          data_files = [('gist',gfiles)],
+          data_files = [('gist',gfiles),(os.path.dirname(sys.executable),['src/gist/gist'])],
           ext_modules = [extension],
    )
+
+if run_install:
+    # --- Fix permissions
+    # --- Give the gist executable the same permissions as python
+    os.chmod(os.path.join(os.path.dirname(sys.executable),'gist'),os.stat(sys.executable).st_mode)
+
+    # --- Give the gistC.so shared object the same permissions as python
+    for d in site.getsitepackages():
+        dg = os.path.join(d,'gist')
+        if os.access(dg,os.F_OK):
+            os.chmod(os.path.join(dg,'gistC.so'),os.stat(sys.executable).st_mode)
 
 # Finished.

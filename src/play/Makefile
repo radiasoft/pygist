@@ -1,38 +1,33 @@
+# $Id: Makefile,v 1.1 2005-09-18 22:05:31 dhmunro Exp $
 SHELL=/bin/sh
 MAKE=make
 include ../Make.cfg
 
-SUBDIRS=unix x11 any
+SUBDIRS=hacks $(PLAY_DIRS) any
+ALLDIRS=hacks win unix x11 any
 
-all: libyor
+all: libplay
 
 # the library is actually built from subdirectories (in order)
-# if any subdirectory modifies libplay.a, make.done will be older
-libyor:
+libplay:
 	@for d in $(SUBDIRS); do ( cd $$d; $(MAKE); ); done
-	@$(MAKE) make.done
-
-make.done: libplay.a
-	$(RANLIB) libplay.a
-	@touch $@
 
 config:
-	cd unix; $(MAKE) config
-	cd x11; $(MAKE) config
+	@for d in $(PLAY_DIRS); do ( cd $$d; $(MAKE) TGT=$(TGT) config; ); done
 
-numfmt: libyor
+numfmt: libplay
 	cd any; $(MAKE) numfmt
 
-test2d: libyor
+test2d: libplay
 	cd any; $(MAKE) test2d
 
 clean:: cleantop
-	@for dir in $(SUBDIRS); do ( cd $$dir; $(MAKE) clean; ); done
+	@for dir in $(ALLDIRS); do ( cd $$dir; $(MAKE) clean; ); done
 
 distclean:: distcleantop
-	@for dir in $(SUBDIRS); do ( cd $$dir; $(MAKE) distclean; ); done
+	@for dir in $(ALLDIRS); do ( cd $$dir; $(MAKE) distclean; ); done
 
 cleantop:
-	rm -f *~ '#'* *.o *.a *.done core a.out
+	rm -f *~ '#'* *.o *.a core* *.core a.out hack*.h playwin.h
 
 distcleantop: cleantop

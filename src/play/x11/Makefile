@@ -1,26 +1,37 @@
+# $Id: Makefile,v 1.1 2005-09-18 22:05:33 dhmunro Exp $
 SHELL=/bin/sh
 MAKE=make
 include ../../Make.cfg
 
-CFLAGS=$(COPTIONS) -I. -I.. -I../unix $(XINC)
+COPT=$(COPT_DEFAULT)
+CFLAGS=$(COPT) $(Y_CFLAGS) -I. -I.. -I../unix $(XINC)
 
 OBJS=colors.o connect.o cursors.o errors.o events.o feep.o fills.o \
   fonts.o images.o lines.o pals.o pwin.o resource.o rgbread.o textout.o \
   rect.o ellipse.o clips.o points.o
 
-STD_DEPS=../unix/config.h ../play.h ../phash.h playx.h
+PLUGEXT=../plugin.h
 
-all: make.done
+STD_DEPS=../unix/config.h ../play.h ../phash.h playx.h $(PLUGEXT)
 
-make.done: $(OBJS)
+all: libplay
+
+../playwin.h: playwin.h
+	rm -f ../playwin.h
+	cp playwin.h ..
+
+libplay: $(OBJS) ../playwin.h
 	$(AR) rc ../libplay.a $(OBJS)
-	@touch $@
+	$(RANLIB) ../libplay.a
+	touch $@
 
+COPTIONS=$(COPT) $(Y_CFLAGS)
+LDOPTIONS=$(COPT) $(Y_LDFLAGS)
 config:
-	CC="$(CC)" CFLAGS="$(COPTIONS)" LDFLAGS="$(LDOPTIONS)" ./xconfig.sh
+	CC="$(CC)" CFLAGS="$(Y_CFLAGS)" LDFLAGS="$(Y_LDFLAGS)" ./xconfig.sh
 
 clean::
-	rm -f *~ '#'* *.o *.a *.done core a.out ../libx11.tgt
+	rm -f *~ '#'* *.o *.a core* *.core a.out cfg* libplay
 
 distclean:: clean
 
