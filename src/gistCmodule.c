@@ -4423,7 +4423,7 @@ static PyObject *pledit (PyObject * self, PyObject * args, PyObject * kd)
     SETKW(kwt[28],  gistD.scale,  setkw_double,  editKeys[28]);
   }
   if (kwt[29]) {        /* scalem */
-    double scalem;
+    double scalem=0;
     if (type != 6)  {
       return ERRSS ("scalem = in pledit allowed only for plv");
     }
