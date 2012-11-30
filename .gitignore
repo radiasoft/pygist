@@ -1,2 +1,7 @@
 *.o
 *.a
+*.pyc
+src/Make.cfg
+src/gist/gist
+libplay
+build
