@@ -87,12 +87,13 @@
 extern "C" {
 #endif
 
+#include "Python.h"
+
 #include <stdio.h>
 #include <math.h>
 #include <setjmp.h>
 #include <string.h>
 
-#include "Python.h"
 #include "pyfpe.h"
 
 #include "numpy/arrayobject.h"
