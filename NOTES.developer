@@ -5,7 +5,7 @@ NOTES for Developers
 
 pygist depends on:
 - Python
-- Numeric extension to Python
+- Numpy extension to Python
 - Yorick's gist package
 
 Layout of pygist directory
@@ -20,12 +20,11 @@ Updating pygist's src to new version of Yorick:
 -----------------------------------------------
 
 Specifically, the gist and play directories are copied directly 
-from the Yorick distribution.  Diff Makefile.gist with gist/Makefile
-to so if Makefile.gist needs changes.  Then copy Makefile.gist over 
-the Makefile in the gist subdirectory.
+from the Yorick distribution. 
 
-Also, Michiel de Hoon contributed style.c and style.h to src/gist,
-so these will have to be added.
+Also, Michiel de Hoon contributed style.c and style.h to src/gist.
+style.c has been incorporated into gistCmodule.c and is unneeded.
+style.h is still needed. No changes are needed in the Makefiles.
 
 Version 
 -------
@@ -36,6 +35,10 @@ Building and installing pygist:
 -------------------------------
 
 The compilation directions are in README.
+
+The first step must be:
+
+   python setup.py config
 
 It is possible to split the build from the install and make it a 
 two-step process:

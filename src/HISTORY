@@ -1,6 +1,12 @@
 $Id: HISTORY,v 1.1 2009/11/19 23:44:46 dave Exp $
 HISTORY of pygist/src
 
+v121130 Dave Grote
+        1. Updated the play source to match what is in Yorick
+        2. Completely reworked the config and build to use the configure
+           and the Makefiles from Yorick. The setup.py config now calls
+           configure (instead of doing it itself).
+
 V041109 Michiel de Hoon
 
         1. gistCmodule.c:  The Py_InitModule4 needs to be called even if 

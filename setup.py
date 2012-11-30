@@ -9,6 +9,7 @@
 #  PURPOSE:  Faciliate installation of pygist module.  
 #
 #  EXECUTE LINE:
+#     python setup.py config           (do the configuration - required)
 #     python setup.py build            (optional)
 #     python setup.py build -g install (build a debug version and install)
 #     python setup.py install          (does both build and install)
@@ -69,7 +70,7 @@ except ImportError:
     from distutils.command.build_py import build_py
 
 pygist_name = "pygist"
-pygist_version = "1.6.1"
+pygist_version = "2.2.0"
 pygist_maintainer = "Dave Grote"
 pygist_maintainer_email = "dpgrote@lbl.gov"
 

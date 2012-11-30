@@ -53,7 +53,7 @@
      should be double quotes.
 """
 
-__version__ = "1.5.28"
+__version__ = "2.2.0"
 
 from numpy import *
 import numpy

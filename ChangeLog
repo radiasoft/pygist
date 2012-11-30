@@ -1,4 +1,5 @@
 CHANGES:
+11/30/12 dpg Updated play to version of Yorick. Reworked the config and build.
 05/28/06 mdh Fixed the DrwText routine in gist/ps.c to deal correctly with
 strings of zero length. This bug caused crashes when plt("") was called and
 a hardcopy was made. The event loop was changed for Windows, Cygwin, and

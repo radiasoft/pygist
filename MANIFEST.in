@@ -1,3 +1,3 @@
-include NOTES.developer HISTORY MANIFEST.in VERSION README setup.py RELEASE release.msg install llnl_install sed_llnl fixPermissions_llnl ChangeLog
+include NOTES.developer HISTORY MANIFEST.in VERSION README setup.py RELEASE release.msg ChangeLog
 recursive-include gist * 
 recursive-include src * 
