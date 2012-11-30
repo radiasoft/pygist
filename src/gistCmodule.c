@@ -245,7 +245,7 @@ pyg_puts(const char *s)
   if (s) {
     long len = strlen(s);
     if (len > 0) {
-      TO_STDOUT(s);
+      TO_STDOUT("%s",s);
       if (s[len-1] == '\n') return 0;
     }
     TO_STDOUT("\n");
@@ -372,7 +372,7 @@ static void removeFromFreeList (GArrayObject * x, int n);
 static void dumpFreeList (int n);
 #endif
 
-static GArrayObject * allocateArray (int size, char tc, int nlist) {
+static GArrayObject * allocateArray (npy_intp size, char tc, int nlist) {
    /* allocate an array object containing size components of type tc */
    GArrayObject * res;
    if (size <= 0)
@@ -447,7 +447,7 @@ static GArrayObject * copyArray (GArrayObject * a) {
    return res;
    }
 
-static GArrayObject * arrayFromPointer (int size, char tc, void * data,
+static GArrayObject * arrayFromPointer (npy_intp size, char tc, void * data,
    int nlist) {
    /* allocate an array object containing size components of type tc. */
    /* Caller supplies address of data and takes responsibility for    */
@@ -711,7 +711,7 @@ static int GrabByteScale ( PyObject **kwt, char **keywrds, double *scale,
 static long SetHCPDefault (void);
 static int YPrompt(const char *s);
 static long build_kwt (PyObject *kd, char *Keys[], PyObject * kwt[]);
-static int set_def_reg (int nr, int nc);
+static long set_def_reg (long nr, long nc);
 static int set_limit (PyObject * ob, double *lim, int *flags, int fval);
 static long set_pyMsh(PyObject *args, char *errstr, PyObject *tri);
 static long set_reg (PyObject *rop);
@@ -1174,7 +1174,7 @@ static GArrayObject * SimpleHist (GArrayObject * i, int freei, int n) {
       else if (* src < 0) {
          return (GArrayObject *) NULL;
          }
-   TRY (res = allocateArray (max + 1, 'i', n), 
+   TRY (res = allocateArray ((npy_intp)(max + 1), 'i', n), 
       (GArrayObject *) PyErr_NoMemory ());
    for (src = (int *) (i->data), tar = (int *) (res->data);
         src < (int *) (i->data) + i->size; src++)
@@ -1285,7 +1285,7 @@ static GArrayObject * WeightedHist (GArrayObject *i, GArrayObject *w,
          max = * src;
       else if (* src < 0)
          return (GArrayObject *) NULL;
-   TRY (res = allocateArray (max + 1, 'i', n), 
+   TRY (res = allocateArray ((npy_intp)(max + 1), 'i', n), 
       (GArrayObject *) PyErr_NoMemory ());
    for (src = (int *) (i->data), tar = (int *) (res->data),
         wgt = (Uchar *) (w->data);
@@ -1371,15 +1371,15 @@ static long _slice2_part (GArrayObject * xyzc, GArrayObject * keep,
       maskd [i] = keepd [i] + i0 + i1;
       }
    if (nlist0 != 0) {
-      TRY (list0 = allocateArray (nlist0, 'i', 1), (long) NULL);
+      TRY (list0 = allocateArray ((npy_intp)(nlist0), 'i', 1), (long) NULL);
       list0d = (int *) (list0->data);
       for (j = 0, i = 0; i < keep->size; i++)
          if ( ! keepd [i] && keepd [nextd [i]])
             list0d [j ++] = i;
-      TRY (xyz0 = allocateArray (3 * nlist0, 'd', 1), (long) NULL);
+      TRY (xyz0 = allocateArray ((npy_intp)(3 * nlist0), 'd', 1), (long) NULL);
       xyz0d = (double *) (xyz0->data);
       if (valc != (GArrayObject *)NULL) {
-         TRY (valc0 = allocateArray (nlist0, atype, 1), (long) NULL);
+         TRY (valc0 = allocateArray ((npy_intp)(nlist0), atype, 1), (long) NULL);
          if (atype == 'd')
             valc0d = (double *) (valc0->data);
          else if (atype == 'b')
@@ -1407,15 +1407,15 @@ static long _slice2_part (GArrayObject * xyzc, GArrayObject * keep,
          }
       }
    if (nlist1 != 0) {
-      TRY (list1 = allocateArray (nlist1, 'i', 1), (long) NULL);
+      TRY (list1 = allocateArray ((npy_intp)(nlist1), 'i', 1), (long) NULL);
       list1d = (int *) (list1->data);
       for (j = 0, i = 0; i < keep->size; i++)
          if (! keepd [i] && keepd [prevd [i]])
             list1d [j ++] = i;
-      TRY (xyz1 = allocateArray (3 * nlist1, 'd', 1), (long) NULL);
+      TRY (xyz1 = allocateArray ((npy_intp)(3 * nlist1), 'd', 1), (long) NULL);
       xyz1d = (double *) (xyz1->data);
       if (valc != (GArrayObject *)NULL) {
-         TRY (valc1 = allocateArray (nlist1, atype, 1), (long) NULL);
+         TRY (valc1 = allocateArray ((npy_intp)(nlist1), atype, 1), (long) NULL);
          if (atype == 'd')
             valc1d = (double *) (valc1->data);
          else if (atype == 'b')
@@ -1448,7 +1448,7 @@ static long _slice2_part (GArrayObject * xyzc, GArrayObject * keep,
       i0 += maskd [i];
       listd [i] = i0;
       }
-   TRY (xold = allocateArray (listd [list->size - 1], 'i', 1), (long) NULL);
+   TRY (xold = allocateArray ((npy_intp)(listd [list->size - 1]), 'i', 1), (long) NULL);
    xoldd = (int *) (xold->data);
    for (i = 0; i < mask->size; i ++) {
       if ( maskd [i] != 0) 
@@ -1511,7 +1511,7 @@ static long _slice2_part (GArrayObject * xyzc, GArrayObject * keep,
    freeArray (xyz1, 1);
    if (valc != (GArrayObject *)NULL)
       freeArray (valc1, 1);
-   TRY (ndxs = allocateArray ( ( (int *) (last->data)) [last->size - 1],
+   TRY (ndxs = allocateArray ( (npy_intp)(( (int *) (last->data)) [last->size - 1]),
       'i', 1), (long) NULL);
    ndxsd = (int *) (ndxs->data);
    for (i = 0, i0 = 0; i < last->size; i0 = ( (int *) (last->data)) [i ++])
@@ -2082,7 +2082,7 @@ static PyObject *contour (PyObject * self, PyObject * args, PyObject * kd)
     return ERRSS ("contour: no current mesh - use plmesh(y, x) to initialize");
   }
 
-  n = PyTuple_Size (args);
+  n = (int)PyTuple_Size (args);
   /* contour (levels, z [, region = num]) */
   if (n != 2)  {
      return ERRSS ("contour requires 2 positional parameters (levels and z).");
@@ -2112,7 +2112,7 @@ static PyObject *contour (PyObject * self, PyObject * args, PyObject * kd)
   /* Skip levels arg */
 
   {  PyObject * newargs;
-     n = PyTuple_Size(args);
+     n = (int)PyTuple_Size(args);
      TRY (newargs = PyTuple_GetSlice (args, 1, n), (PyObject *) NULL);
      TRY (setz_mesh (newargs, &zop, errstr, kwt[0]), (PyObject *) NULL);
      Py_DECREF (newargs);
@@ -2130,7 +2130,7 @@ static PyObject *contour (PyObject * self, PyObject * args, PyObject * kd)
   if (isARRAY (olevels)) {
      GET_ARR (alevels, olevels, NPY_DOUBLE, 1, PyObject *);
      lev = (double *) A_DATA (alevels);
-     nlevels = A_SIZE (alevels);
+     nlevels = (int)A_SIZE (alevels);
      if (nlevels > 2) {
         clearArrayList ();
         return ERRSS ("contour: only 1 or 2 levels allowed."); 
@@ -2183,7 +2183,7 @@ static PyObject *contour (PyObject * self, PyObject * args, PyObject * kd)
   RET_ARR ( aycp, 1, &ntotal, NPY_DOUBLE, (char *) ycp, PyObject *);
   SET_OWN (aycp);
 
-  i = GcTrace (np, xcp, ycp);
+  i = (int)GcTrace (np, xcp, ycp);
   if ( i != ntotal) {
      clearArrayList ();
      clearMemList ();
@@ -2331,7 +2331,7 @@ static void PrintFunc (const char *s)
     }
   }
   strcpy (&printBuf[printNow], s);
-  printNow += len;
+  printNow += (int)len;
 }
 
 /* Used only by plq() */
@@ -2567,7 +2567,7 @@ static long build_kwt (PyObject *kd, char *kwlist[], PyObject * kwt[])
 
   /* Check that all keywords passed are legal for this command. */
   keylist = PyMapping_Keys (kd);
-  n = PyList_Size (keylist);
+  n = (int)PyList_Size (keylist);
   for (i = 0; i < n; i++) {
     kob = PySequence_GetItem (keylist, i);
     kword = PyString_AsString (kob);
@@ -2891,7 +2891,7 @@ static PyObject *gridxy (PyObject * self, PyObject * args, PyObject * kd)
     return ERRSS ("gridxy takes zero, one or two non-keyword arguments.");
   }
   /* If one argument is given, use it for both x and y. */
-  if((narg = PyTuple_Size(args)) == 1)
+  if((narg = (int)PyTuple_Size(args)) == 1)
     ygrid = xgrid;
 
   TRYS(CheckDefaultWindow())
@@ -3422,7 +3422,7 @@ static char mfit__doc__[] =
 
 static PyObject *mfit (PyObject * self, PyObject * args)
 {
- int nxcplot,
+ long nxcplot,
      nycplot,
      nzcplot;
  double *x,
@@ -3443,10 +3443,10 @@ static PyObject *mfit (PyObject * self, PyObject * args)
                *axcplot,
                *aycplot,
                *azcplot;
- int i,
-     j,
-     k,
-     l;
+ long i,
+      j,
+      k,
+      l;
  npy_intp dims [2];
  double sum;
  
@@ -3654,21 +3654,21 @@ static PyObject *palette (PyObject * self, PyObject * args, PyObject * kd)
   case 4: /* (red, green, blue, gray) given */
     TRY (grayop = PyTuple_GetItem (args, 3), (PyObject *) NULL);
     GET_ARR (grayap, grayop, Py_GpColor, 1, PyObject *);
-    ngray = A_SIZE (grayap);
+    ngray = (int)A_SIZE (grayap);
     gray = (GpColor *) A_DATA (grayap);
     /* Fall through. */
   case 3: /* (red, green, blue) given */
     TRY (PyArg_ParseTuple (args, "OOO", &rop, &gop, &bop), (PyObject *) NULL);
     GET_ARR (rap, rop, Py_GpColor, 1, PyObject *);
-    nred = A_SIZE (rap);
+    nred = (int)A_SIZE (rap);
     red = (GpColor *) A_DATA (rap);
 
     GET_ARR (gap, gop, Py_GpColor, 1, PyObject *);
-    ngreen = A_SIZE (gap);
+    ngreen = (int)A_SIZE (gap);
     green = (GpColor *) A_DATA (gap);
 
     GET_ARR (bap, bop, Py_GpColor, 1, PyObject *);
-    nblue = A_SIZE (bap);
+    nblue = (int)A_SIZE (bap);
     blue = (GpColor *) A_DATA (bap);
 
     /* Check for matched array sizes and set nColors. */
@@ -4412,7 +4412,7 @@ static PyObject *pledit (PyObject * self, PyObject * args, PyObject * kd)
        data structures than seem reasonable here... */
     p_free (gistD.levels);
     gistD.levels = levels;
-    gistD.nLevels = nLevels;
+    gistD.nLevels = (int)nLevels;
     changes |= CHANGE_Z;
     resetLevs = 1;
   }
@@ -4433,7 +4433,7 @@ static PyObject *pledit (PyObject * self, PyObject * args, PyObject * kd)
     PyFPE_END_PROTECT(dummy)
   }
   if (kwt[30]) {        /* dx */
-    double x0;
+    double x0=0.;
     if (type != 3)  {
       return ERRSS ("dx = in pledit allowed only for plt");
     }
@@ -4443,7 +4443,7 @@ static PyObject *pledit (PyObject * self, PyObject * args, PyObject * kd)
     PyFPE_END_PROTECT(dummy)
   }
   if (kwt[31]) {        /* dy */
-    double y0;
+    double y0=0.;
     if (type != 3)  {
       return ERRSS ("dy = in pledit allowed only for plt");
     }
@@ -4974,7 +4974,7 @@ static PyObject *pli (PyObject * self, PyObject * args, PyObject * kd)
 
   x0= y0= x1= y1= 0.0;
 
-  switch (nargs = PyTuple_Size (args)) {
+  switch (nargs = (int)PyTuple_Size (args)) {
   case 5: /* (z, x0, y0, x1, y1) given */
     TRY (PyArg_ParseTuple (args, "Odddd", &zop, &x0, &y0, &x1, &y1), 
        (PyObject *) NULL);
@@ -5725,7 +5725,7 @@ static PyObject *plv (PyObject * self, PyObject * args, PyObject * kd)
   PyObject *uop, *vop;
   char *v_name= 0, *u_name= 0, *y_name= 0, *x_name= 0;
   long iMax= 0, jMax= 0;
-  double *u= 0, *v= 0, scale;
+  double *u= 0, *v= 0, scale= 0;
   GaQuadMesh mesh;
 
   PyObject * kwt[NELT(plvKeys) - 1];
@@ -5951,9 +5951,10 @@ static PyObject *redraw (PyObject * self, PyObject * args)
 }
 
 /* Create a default region array for the current mesh. */
-static int set_def_reg (int nr, int nc)
+static long set_def_reg (long nr, long nc)
 {
-  int i, ne, *p1;
+  int *p1;
+  long i, ne;
   npy_intp newlen;
   PyArrayObject *ra1;
 
@@ -6039,7 +6040,8 @@ static long set_pyMsh(PyObject *args, char *errstr, PyObject *tri)
 /* Create a non-default region (mesh) array from the passed-in object. */
 static long set_reg (PyObject *op)
 {
-  int i, ok, nr, nc, ne, *p1;
+  int ok, *p1;
+  long i, nr, nc, ne;
   npy_intp newlen;
   long *p2;
   PyArrayObject *ra2, *ra1;
@@ -6099,7 +6101,7 @@ static PyObject *set_slice2_precision (PyObject * self, PyObject * args)
 /* Create a triangulation (mesh) array. */
 static long set_tri (PyObject *top)
 {
-  int nr, nc;
+  long nr, nc;
 
   if (!pyMsh.y)  {
     return (long) ERRSS ("No current mesh - triangle not set - set (y, x) first");
@@ -6120,7 +6122,7 @@ static long set_tri (PyObject *top)
 
 static long set_yx (PyObject *yop, PyObject *xop)
 {
-  int nr, nc;
+  long nr, nc;
 
   clear_pyMsh();
 
@@ -6467,7 +6469,7 @@ static long setkw_xinteger (PyObject * v, int *t, char *kw)
 static long setvu_mesh(
   PyObject *args, PyObject **vop, PyObject **uop, char *errstr)
 {
-  int n;
+  long n;
   PyObject *newargs;
 
   switch (n = PyTuple_Size(args)) {
@@ -6495,7 +6497,7 @@ static long setvu_mesh(
 static long setz_mesh (
   PyObject *args, PyObject **zop, char *errstr, PyObject *tri)
 {
-  int n;
+  long n;
   PyObject *newargs;
 
   switch (n = PyTuple_Size(args)) {
@@ -6516,7 +6518,7 @@ static long setz_mesh (
 
 static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3])
 {
-  int i, size = PyTuple_Size (ob);
+  int i, size = (int)PyTuple_Size (ob);
   PyObject *item,*intitem;
   if ( size != 3 ) {
     return (long) ERRSS ("Color tuple must have 3 colors");
@@ -6539,7 +6541,7 @@ static long unpack_color_tuple (PyObject * ob, unsigned long color_triple[3])
 /* Used only by limits() */
 static long unpack_limit_tuple (PyObject * ob, double limits[], int *flags)
 {
-  int i, size = PyTuple_Size (ob);
+  int i, size = (int)PyTuple_Size (ob);
   PyObject *item,*floatitem,*intitem;
   if (5 != size) {
     return (long) ERRSS ("Old limits must have four doubles + 1 integer");
@@ -6812,18 +6814,18 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
    /* xyzc: The vertex coordinates of each cut polygon.              */
    /* valuec (if given): The values of the function on each vertex   */
    /*    (if node == 1) or on each polygon (if node == 0).           */
-   TRY (nvertc = allocateArray (list1_length, 'i', 0), PyErr_NoMemory());
+   TRY (nvertc = allocateArray ((npy_intp)(list1_length), 'i', 0), PyErr_NoMemory());
    nvertcd = (int *) (nvertc ->data);
-   TRY (list = allocateArray (list_length, 'i', 0), PyErr_NoMemory());
+   TRY (list = allocateArray ((npy_intp)(list_length), 'i', 0), PyErr_NoMemory());
    listd = (int *) (list->data);
-   TRY (xyzc = allocateArray (list_length * 3, 'd', 0), PyErr_NoMemory());
+   TRY (xyzc = allocateArray ((npy_intp)(list_length * 3), 'd', 0), PyErr_NoMemory());
    xyzcd = (double *) (xyzc->data);
    if (avalues && node == 0) {
-      TRY (valuec = allocateArray (list1_length, atype, 0), 
+      TRY (valuec = allocateArray ((npy_intp)(list1_length), atype, 0), 
          PyErr_NoMemory());
       }
    else if (avalues && node == 1) {
-      TRY (valuec = allocateArray (list_length, atype, 0), PyErr_NoMemory());
+      TRY (valuec = allocateArray ((npy_intp)(list_length), atype, 0), PyErr_NoMemory());
       }
    if (avalues)  {
       if (atype == 'd')
@@ -6914,17 +6916,17 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
             }
          }
       if (list2_length != 0) {
-         TRY (nvertc0 = allocateArray (list2_length, 'i', 0), 
+         TRY (nvertc0 = allocateArray ((npy_intp)(list2_length), 'i', 0), 
             PyErr_NoMemory());
          nvertc0d = (int *) (nvertc0->data);
-         TRY (listc = allocateArray (listc_length, 'i', 0), 
+         TRY (listc = allocateArray ((npy_intp)(listc_length), 'i', 0), 
             PyErr_NoMemory());
          listcd = (int *) (listc->data);
-         TRY (xyzc0 = allocateArray (listc_length * 3, 'd', 0), 
+         TRY (xyzc0 = allocateArray ((npy_intp)(listc_length * 3), 'd', 0), 
             PyErr_NoMemory());
          xyzc0d = (double *) (xyzc0->data);
          if (avalues && node == 0) {
-            TRY (valuec0 = allocateArray (list2_length, atype, 0), 
+            TRY (valuec0 = allocateArray ((npy_intp)(list2_length), atype, 0), 
                PyErr_NoMemory());
             if (atype == 'd')
                valuec0d = (double *) (valuec0->data);
@@ -6932,7 +6934,7 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
                valuec0c = (Uchar *) (valuec0->data);
             }
          else if (avalues && node == 1) {
-            TRY (valuec0 = allocateArray (listc_length, atype, 0),
+            TRY (valuec0 = allocateArray ((npy_intp)(listc_length), atype, 0),
                PyErr_NoMemory());
             if (atype == 'd')
                valuec0d = (double *) (valuec0->data);
@@ -6975,11 +6977,11 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
           listc_length1 += mask2d [i] * nvertsd [i];
           }
     if (list2_length != 0) {
-      TRY (rnvertb = allocateArray (list2_length, 'i', 0), 
+      TRY (rnvertb = allocateArray ((npy_intp)(list2_length), 'i', 0), 
          PyErr_NoMemory());
       rnvertbd = (int *) (rnvertb->data);
       if (avalues && node == 0) {
-         TRY (rvalueb = allocateArray (list2_length, atype, 0), 
+         TRY (rvalueb = allocateArray ((npy_intp)(list2_length), atype, 0), 
             PyErr_NoMemory());
          if (atype == 'd')
             rvaluebd = (double *) (rvalueb->data);
@@ -6987,14 +6989,14 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
             rvaluebc = (Uchar *) (rvalueb->data);
          }
       else if (avalues && node != 0) {
-         TRY (rvalueb = allocateArray (listc_length1, atype, 0),
+         TRY (rvalueb = allocateArray ((npy_intp)(listc_length1), atype, 0),
             PyErr_NoMemory());
          if (atype == 'd')
             rvaluebd = (double *) (rvalueb->data);
          else
             rvaluebc = (Uchar *) (rvalueb->data);
          }
-      TRY (rxyzvertb = allocateArray (3 * listc_length1, 'd', 0), 
+      TRY (rxyzvertb = allocateArray ((npy_intp)(3 * listc_length1), 'd', 0), 
          PyErr_NoMemory());
       rxyzvertbd = (double *) (rxyzvertb->data);
       for (i = 0, k = 0, sumv = 0, sumt = 0; i < A_SIZE (anverts); i ++) {
@@ -7044,14 +7046,14 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
        }
     else {
        /* Extract the uncut data. */
-       TRY (rnverts = allocateArray (list0_length, 'i', 0), 
+       TRY (rnverts = allocateArray ((npy_intp)(list0_length), 'i', 0), 
           PyErr_NoMemory());
        rnvertsd = (int *) (rnverts->data);
-       TRY (rxyzverts = allocateArray (listc0_length * 3, 'd', 0), 
+       TRY (rxyzverts = allocateArray ((npy_intp)(listc0_length * 3), 'd', 0), 
           PyErr_NoMemory());
        rxyzvertsd = (double *) (rxyzverts->data);
        if (avalues && node != 0) {
-          TRY (rvalues = allocateArray (listc0_length, atype, 0), 
+          TRY (rvalues = allocateArray ((npy_intp)(listc0_length), atype, 0), 
              PyErr_NoMemory());
           if (atype == 'd')
              rvaluesd = (double *) (rvalues->data);
@@ -7059,7 +7061,7 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
              rvaluesc = (Uchar *) (rvalues->data);
           }
        else if (avalues) {
-          TRY (rvalues = allocateArray (list0_length, atype, 0),
+          TRY (rvalues = allocateArray ((npy_intp)(list0_length), atype, 0),
              PyErr_NoMemory());
           if (atype == 'd')
              rvaluesd = (double *) (rvalues->data);
@@ -7259,7 +7261,7 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
     for (i = 0; i < list_length; i++)
        ndpd [i] = dpd [listd [i]] - _slice2_precision;
     freeArray (dp, 0);
-    TRY (dp = arrayFromPointer (list_length, 'd', ndpd, 0),
+    TRY (dp = arrayFromPointer ((npy_intp)(list_length), 'd', ndpd, 0),
        PyErr_NoMemory());
     dpd = ndpd;
     freeArray (keep, 0);
@@ -7346,11 +7348,11 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
        for (i = 0; i < keep->size; i++)
           keepd [i] = ! keepd [i];
     else {
-       TRY (ndp = allocateArray (listc_length, 'd', 0), 
+       TRY (ndp = allocateArray ((npy_intp)(listc_length), 'd', 0), 
           PyErr_NoMemory());
        ndpd = (double *) (ndp->data);
        freeArray (keep, 0);
-       TRY (keep = allocateArray (listc_length, 'b', 0), 
+       TRY (keep = allocateArray ((npy_intp)(listc_length), 'b', 0), 
           PyErr_NoMemory());
        keepd = (Uchar *) (keep->data);
        for (i = 0; i < listc_length; i ++) {
@@ -7458,7 +7460,7 @@ static PyObject * slice2 (PyObject * self, PyObject * args)
     PyObject *);
  SET_OWN (orxyzverts);
  if (rvalues != (GArrayObject *) Py_None) {
-    i = rvalues->size;
+    i = (int)(rvalues->size);
     if (atype == 'd') {
        RET_ARR (orvalues, 1, & (rvalues->size), atype, (char *) rvaluesd,
           PyObject *);
@@ -9312,7 +9314,7 @@ static PyObject *set_style (PyObject * self, PyObject * args)
   ilandscape = (int) PyInt_AsLong(landscape);
   n = PyList_Size(systems);
   fakesystems = (GfakeSystem*)malloc(n*sizeof(GfakeSystem));
-  if(!set_systems_list(systems, n, fakesystems)) return NULL;
+  if(!set_systems_list(systems, (int)n, fakesystems)) return NULL;
   if(!set_legend(legend,&legendboxes[0])) return NULL;
   if(!set_legend(contourlegend,&legendboxes[1])) return NULL;
   if(raw_style(n,&ilandscape,fakesystems,legendboxes)==-1)
@@ -9470,7 +9472,7 @@ PyMODINIT_FUNC initgistC (void)
   msys = (PyObject *) PyImport_AddModule ("sys");
   d = PyModule_GetDict (msys);
   sys_path = PyDict_GetItemString (d, "path");
-  n = PySequence_Length(sys_path); /* sys.path is a list of strings. */
+  n = (int)PySequence_Length(sys_path); /* sys.path is a list of strings. */
   for(i=0; i<n; i++){
     PyObject *op;
     const char *s;
