@@ -133,7 +133,7 @@ p_connect(char *server_name)
     xdpy->alt_state = xdpy->meta_state = 0;
     for (k=0 ; k<5 ; k++) {
       for (i=0 ; i<n ; i++) {
-        keysym = XKeycodeToKeysym(dpy, keys[k][i], 0);
+        keysym = XkbKeycodeToKeysym(dpy, keys[k][i], 0, 0);
         if (keysym==XK_Meta_L || keysym==XK_Meta_R) {
           xdpy->meta_state = states[k];
           break;
