@@ -189,7 +189,7 @@ def xytitles(xtitle = "", ytitle = "", delta = (0.,0.)):
 
 def _spanz(lb,ub,n):
 
-   if n < 3: raise ValueError, '3rd arg must be at least 3'
+   if n < 3: raise ValueError( '3rd arg must be at least 3')
    c = 0.5*(ub - lb)/(n - 1.0)
    b = lb + c
    a = (ub - c - b)/(n - 2.0)
@@ -358,7 +358,8 @@ def spann (zmin, zmax, n = 8, fudge = 0, force = 0) :
       levs = array ( [-1.0, 1.0])
    return (levs)
 
-_ContourError = "ContourError"
+class ContourError(Exception):
+    pass
 
 #  ---------------------------------------------------------------------
 def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
@@ -447,7 +448,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
           diff = (z2 - z1) / (n - 1)
           vc [1:n + 1] = z1 + arange (n) * diff
       else :
-          raise _ContourError, "Incomprehensible scale parameter."
+          raise ContourError( "Incomprehensible scale parameter.")
    elif isinstance(contours,ndarray) and contours.dtype.char == 'd' :
       n = len (contours)
       vc = zeros (n + 2, 'd')
@@ -455,7 +456,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
       vc [n + 1] = vcmax
       vc [1:n + 1] = sort (contours)
    else :
-      raise _ContourError, "Incorrect contour specification."
+      raise ContourError( "Incorrect contour specification.")
    if colors == None :
       colors = (arange (0, n + 1, 1, 'd') * (199. / n)).astype ('B')
    else :

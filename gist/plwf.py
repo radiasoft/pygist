@@ -195,7 +195,8 @@ def plwf (z, y = None, x = None, fill = None, shade = 0, edges = 1,
       call_idler ( ) # This will traverse and execute the drawing list
                      # if the default idler has been set.
 
-_LightwfError = "LightwfError"
+class LightwfError(Exception):
+    pass
 
 def lightwf (cmax) :
 
@@ -214,12 +215,13 @@ def lightwf (cmax) :
    _draw3_n = get_draw3_n_ ()
    list = _draw3_list [_draw3_n:]
    if list [0] != plwf :
-      raise _LightwfError, "current 3D display list is not a plwf"
+      raise LightwfError( "current 3D display list is not a plwf")
    list [1] [7] = cmax
    undo3_set_ (lightwf, list)
 
 
-_Xyz_wfError = "Xyz_wfError"
+class Xyz_wfError(Exception):
+    pass
 
 def xyz_wf (z, y, x, scale = 1.0) :
 
@@ -251,16 +253,16 @@ def xyz_wf (z, y, x, scale = 1.0) :
    """
 
    if len (shape (z)) < 2 :
-      raise _Xyz_wfError, "impossible dimensions for z array"
+      raise Xyz_wfError( "impossible dimensions for z array")
    nx = shape (z) [0]
    ny = shape (z) [1]
    if y == None or x == None :
       if x != None or y != None :
-         raise _Xyz_wfError, "either give y,x both or neither"
+         raise Xyz_wfError( "either give y,x both or neither")
       x = span (0, ny - 1, ny, nx)
       y = transpose (span (0, nx - 1, nx, ny))
    elif shape (x) != shape (z) or shape (y) != shape (z) :
-      raise _Xyz_wfError, "x, y, and z must all have same dimensions"
+      raise Xyz_wfError( "x, y, and z must all have same dimensions")
    xyscl = max (maxelt_ (x) - minelt_ (x),
                 maxelt_ (y) - minelt_ (y))
    if scale != None:

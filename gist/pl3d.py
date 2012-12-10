@@ -133,7 +133,8 @@ def aim3 ( xa = 0., ya = 0., za = 0. ) :
 
    setorg3_ (x)
 
-_ZcError = "ZcError"
+class ZcError(Exception):
+    pass
 
 def setz3 ( zc = None ) :
 
@@ -145,7 +146,7 @@ def setz3 ( zc = None ) :
    """
 
    if not is_scalar (zc) :
-      raise _ZcError, "camera position must be scalar."
+      raise ZcError( "camera position must be scalar.")
 
    setzc3_ (zc)
 
@@ -261,9 +262,12 @@ def restore3 ( view = None ) :
    _draw3_list = view [0:_draw3_n] + _draw3_list [_draw3_n:]
    undo3_set_ (restore3, old)
 
-_AmbientError = "AmbientError"
-_DiffuseError = "DiffuseError"
-_LightingError = "LightingError"
+class AmbientError(Exception):
+    pass
+class DiffuseError(Exception):
+    pass
+class LightingError(Exception):
+    pass
 
 def light3 ( * kw, ** kwds ) :
 
@@ -317,13 +321,13 @@ def light3 ( * kw, ** kwds ) :
    if "ambient" in kwds and kwds ["ambient"] != None :
       ambient = kwds ["ambient"]
       if not is_scalar (ambient) :
-         raise _AmbientError, "ambient light level must be scalar."
+         raise AmbientError( "ambient light level must be scalar.")
       flags = flags | 1
       _draw3_list [_draw3_nv] = ambient
    if "diffuse" in kwds and kwds ["diffuse"] != None :
       diffuse = kwds ["diffuse"]
       if not is_scalar (diffuse) :
-         raise _DiffuseError, "diffuse light level must be scalar."
+         raise DiffuseError( "diffuse light level must be scalar.")
       flags = flags | 2
       _draw3_list [_draw3_nv + 1 ] = diffuse
 
@@ -341,8 +345,7 @@ def light3 ( * kw, ** kwds ) :
       sdir = kwds ["sdir"]
       dims = shape (sdir)
       if dims == 0 or len (dims) == 2 and dims [1] != 3 :
-         raise _LightingError, \
-            "lighting direction must be 3 vector or ns-by-3 array."
+         raise LightingError( "lighting direction must be 3 vector or ns-by-3 array.")
       flags = flags | 16
    else :
       sdir = _draw3_list [_draw3_nv + 4]
@@ -535,7 +538,8 @@ def get3_centroid (xyz, * nxyz) :
       centroid = centroid / fnxyz
    return centroid
 
-_Get3Error = "Get3Error"
+class Get3Error(Exception):
+    pass
 
 def get3_xy (xyz, *flg) :
 
@@ -587,7 +591,7 @@ def get3_xy (xyz, *flg) :
       rm = (xyz - array ( [ go3_ [0], go3_ [1], go3_ [2]]))
       tmpxyz = dot (rm, lm)
    else:
-      raise _Get3Error, "xyz has a bad shape: " + `shp`
+      raise Get3Error( "xyz has a bad shape: " + `shp`)
 
    # do optional perspective projection 
    zc = getzc3_ ()
@@ -608,7 +612,8 @@ def get3_xy (xyz, *flg) :
             tmpxyz [:,:, 2] = tmpxyz [:,:, 2] / zc
    return tmpxyz
 
-_UndoError = "UndoError"
+class UndoError(Exception):
+    pass
 
 _in_undo3 = 0
 _undo3_list = []
@@ -625,7 +630,7 @@ def undo3 (n = 1) :
    global _in_undo3, _undo3_list
    n = 2 * n
    if n < 0 or n > len (_undo3_list) :
-      raise _UndoError, "not that many items in undo list"
+      raise UndoError( "not that many items in undo list")
    _in_undo3 = 1     # flag to skip undo3_set_
    # perhaps should save discarded items in a redo list?
    use_list = undo3_list [-n:]

@@ -419,7 +419,7 @@ def run (*itest) :
 #            nhex = ZLsc [i]
 #            istart = istart + ZLss [i] * ZLsc [i]
 #         else :
-#            raise NodeError, `ZLss[i]` + "is an incorrect number of nodes."
+#            raise NodeError( `ZLss[i]` + "is an incorrect number of nodes.")
 
 #      m3 = mesh3 (x, y, z, funcs = [c], verts = [nz_tet, nz_pyr, nz_prism,
 #         nz_hex])

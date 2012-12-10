@@ -430,7 +430,7 @@ def a3(lb,ub,n):
 # Half-hearted attempt at span(), which returns N equally-spaced
 # values in the sequence [lb, ..., ub]
 def span(lb,ub,n):
-   if n < 2: raise ValueError, '3rd arg must be at least 2'
+   if n < 2: raise ValueError( '3rd arg must be at least 2')
    b = lb
    a = (ub - lb)/(n - 1.0)
    #return a*arange(n) + b # if you want an array
@@ -439,7 +439,7 @@ def span(lb,ub,n):
 # Half-hearted attempt at span()(zcen), which returns N-1 "zone-centered"
 # values in sequence (lb, ..., ub)
 def spanz(lb,ub,n):
-   if n < 3: raise ValueError, '3rd arg must be at least 3'
+   if n < 3: raise ValueError( '3rd arg must be at least 3')
    c = 0.5*(ub - lb)/(n - 1.0)
    b = lb + c
    a = (ub - c - b)/(n - 2.0)

@@ -12,7 +12,8 @@ from shapetest import *
    avg_, timer_, timer_print.
 """
 
-_ZcenError = "ZcenError"
+class ZcenError(Exception):
+    pass
 
 def zcen_ (x, i = 0) :
 
@@ -25,12 +26,11 @@ def zcen_ (x, i = 0) :
    """
 
    if is_scalar (x) :
-      raise _ZcenError, "zcen_ must be called with an array."
+      raise ZcenError( "zcen_ must be called with an array.")
    dims = shape (x)
    ndims = len (dims)
    if i < 0 or i > ndims - 1 :
-      raise _ZcenError, "i <" + `i+1` + \
-         "> is out of the range of x's dimensions<" + `ndims` +"."
+      raise ZcenError( "i <" + `i+1` + "> is out of the range of x's dimensions<" + `ndims` +".")
    if i == 0 :
       newx = (x [0:dims [0]-1] + x [1:dims [0]]) /2.0
    elif i == 1 :
@@ -45,7 +45,8 @@ def zcen_ (x, i = 0) :
 
    return newx
 
-_DifError = "DifError"
+class DifError(Exception):
+    pass
 
 def dif_ (x, i = 0) :
 
@@ -58,12 +59,11 @@ def dif_ (x, i = 0) :
    """
 
    if is_scalar (x) :
-      raise _DifError, "dif_ must be called with an array."
+      raise DifError( "dif_ must be called with an array.")
    dims = shape (x)
    ndims = len (dims)
    if i < 0 or i > ndims - 1 :
-      raise _DifError, "i <" + `i+1` + \
-         "> is out of the range of x's dimensions <" + `ndims` +">."
+      raise DifError( "i <" + `i+1` + "> is out of the range of x's dimensions <" + `ndims` +">.")
    if i == 0 :
       newx = x [1:dims [0]] - x [0:dims [0] - 1]
    elif i == 1 :

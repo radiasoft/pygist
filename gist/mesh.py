@@ -46,19 +46,19 @@ class Mesh:
       try:
          self.x = array ( x, typecode=Float, copy=0 )
       except:
-         raise TypeError, "Could not cast x to numpy array"
+         raise TypeError( "Could not cast x to numpy array")
 
       if not ( rank(self.x) == 2 and 
                shape(self.x)[0] >=2 and shape(self.x)[1] >= 2 ):
-         raise TypeError, "x must be 2D"
+         raise TypeError( "x must be 2D")
 
       try:
          self.y = array ( y, typecode=Float, copy=0 )
       except:
-         raise TypeError, "Could not cast y to numpy array"
+         raise TypeError( "Could not cast y to numpy array")
       if not ( rank(self.y) == 2 and 
                shape(self.y)[0] >=2 and shape(self.y)[1] >= 2 ):
-         raise TypeError, "y must be 2D"
+         raise TypeError( "y must be 2D")
 
       if ireg is None:
          self.ireg = zeros ( shape(self.x), Int )
@@ -67,10 +67,10 @@ class Mesh:
          try:
             self.ireg = array ( ireg, typecode=Int, copy=0 )
          except:
-            raise TypeError, "Could not cast ireg to numpy array"
+            raise TypeError( "Could not cast ireg to numpy array")
          if not ( rank(self.ireg) == 2 and 
                   shape(self.ireg)[0] >=2 and shape(self.ireg)[1] >= 2 ):
-            raise TypeError, "ireg must be 2D"
+            raise TypeError( "ireg must be 2D")
 
       if triangle is None:
          self.triangle = zeros ( shape(self.x), Int16 )
@@ -78,10 +78,10 @@ class Mesh:
          try:
             self.triangle = array ( triangle, typecode=Int16, copy=0 )
          except:
-            raise TypeError, "Could not cast triangle to numpy array"
+            raise TypeError( "Could not cast triangle to numpy array")
          if not ( rank(self.triangle) == 2 and
                   shape(self.triangle)[0] >=2 and shape(self.triangle)[1] >= 2 ):
-            raise TypeError, "triangle must be 2D"
+            raise TypeError( "triangle must be 2D")
 
       self.shape = shape(self.x) 
 
@@ -96,28 +96,28 @@ class Mesh:
       try:
          self.ireg = array ( ireg, typecode=Int, copy=0 )
       except:
-         raise TypeError, "Could not cast ireg to numpy array"
+         raise TypeError( "Could not cast ireg to numpy array")
 
       if not ( rank(self.ireg) == 2 and
                shape(self.ireg)[0] >=2 and shape(self.ireg)[1] >= 2 ):
-         raise TypeError, "ireg must be 2D"
+         raise TypeError( "ireg must be 2D")
 
       if self.shape != shape ( self.ireg ):
-         raise InputError, "ireg has incompatible shape."
+         raise InputError( "ireg has incompatible shape.")
       
    def setTriangle ( self, triangle ):
 
       try:
          self.triangle = array ( triangle, typecode=Int16, copy=0 )
       except:
-         raise TypeError, "Could not cast triangle to numpy array"
+         raise TypeError( "Could not cast triangle to numpy array")
 
       if not ( rank(self.triangle) == 2 and
                shape(self.triangle)[0] >=2 and shape(self.triangle)[1] >= 2 ):
-         raise TypeError, "triangle must be 2D"
+         raise TypeError( "triangle must be 2D")
 
       if self.shape != shape (self.triangle):
-         raise InputError, "triangle has incompatible shape."
+         raise InputError( "triangle has incompatible shape.")
 
    def clear ( self ):
       self.x = None
@@ -161,7 +161,7 @@ def plmesh ( y=None, x=None, ireg=None, triangle=None, mesh=None ):
 
    if x is not None and y is None or \
       x is None and y is not None:
-      raise InputError, "If x is supplied, y must be supplied, and vice versa"
+      raise InputError( "If x is supplied, y must be supplied, and vice versa")
 
    if mesh is None:
 
@@ -179,7 +179,7 @@ def plmesh ( y=None, x=None, ireg=None, triangle=None, mesh=None ):
          print "Warning: provided both (y,x) and mesh; will use mesh"
 
    if savedMesh is None:
-      raise InputError, "No mesh has been specfied."
+      raise InputError( "No mesh has been specfied.")
 
    if existMesh == True:
 #     .. Allow ireg and triangle of an existing mesh to be modified
@@ -224,7 +224,7 @@ def plc ( z, y=None, x=None, ireg=None, levs=None, mesh=None, **keywords ):
 
       if x is None and y is None and ireg is None:
          if savedMesh is None:
-            raise InputError, "No mesh specified."
+            raise InputError( "No mesh specified.")
          else:
             print "Warning: using obsolete format; specify mesh or (y,x)."
             mesh = savedMesh
@@ -247,7 +247,7 @@ def plc ( z, y=None, x=None, ireg=None, levs=None, mesh=None, **keywords ):
  
 #  .. Check the dimensions of mesh
    if shape(_z) != mesh.shape:
-      raise TypeError, "input mesh does not match dimensions of x"
+      raise TypeError( "input mesh does not match dimensions of x")
 
    if levs is None:
 #     .. Default is 8 evenly spaced contours
@@ -325,7 +325,7 @@ def plf ( z, y=None, x=None, ireg=None, mesh=None, **keywords ):
  
 #  .. Check the dimensions of mesh
    if shape(_z) != mesh.shape:
-      raise TypeError, "input mesh does not match dimensions of x"
+      raise TypeError( "input mesh does not match dimensions of x")
 
    print mesh.x
    print mesh.y
@@ -420,7 +420,7 @@ def plv ( vy, vx, y=None, x=None, ireg=None, mesh=None, **keywords ):
    _vy = array ( vy, Float, copy=0 )
 
    if shape(_vx) != shape(_vy):
-      raise InputError, "Shapes of vx and vy are not the same."
+      raise InputError( "Shapes of vx and vy are not the same.")
 
    if mesh is None:
 
@@ -444,7 +444,7 @@ def plv ( vy, vx, y=None, x=None, ireg=None, mesh=None, **keywords ):
  
 #  .. Check the dimensions of mesh
    if shape(_vx) != mesh.shape:
-      raise TypeError, "input mesh does not match dimensions of x"
+      raise TypeError( "input mesh does not match dimensions of x")
 
    print mesh.x 
    print mesh.y 
