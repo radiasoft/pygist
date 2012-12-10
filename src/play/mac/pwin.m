@@ -295,6 +295,14 @@ p_gui(void (*on_expose)(void *c, int *xy),
 @end
 
 p_win *
+p_subwindow(p_scr *s, int width, int height,
+            unsigned long parent_id, int x, int y,
+            unsigned long bg, int hints, void *ctx)
+{
+  return 0;
+}
+
+p_win *
 p_window(p_scr *s, int width, int height, char *title,
          unsigned long bg, int hints, void *ctx)
 {
@@ -348,6 +356,8 @@ p_window(p_scr *s, int width, int height, char *title,
 
   if (hints&P_NOKEY) [window orderFront: nil];
   else [window makeKeyAndOrderFront: nil];
+
+  pw->s->nwins++;
 
   return pw;
 }
@@ -412,6 +422,7 @@ p_destroy(p_win *pw)
     [view switchoff];
   }
   if (window) [window close]; /* release follows automatically on close */
+  pw->s->nwins--;
   pw->ctx = 0;           /* do not call on_destroy handler */
   pw->w = 0;
   pw->view = 0;

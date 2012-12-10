@@ -35,6 +35,7 @@ p_connect(char *server_name)
   m_screen.y0 = r.origin.y;
   m_screen.width = r.size.width;
   m_screen.height = r.size.height;
+  m_screen.nwins = 0;
   m_screen.depth = NSBitsPerPixelFromDepth([screen depth]);
 
   m_screen.colorspace = CGColorSpaceCreateDeviceRGB();
@@ -218,6 +219,12 @@ p_sshape(p_scr *s, int *width, int *height)
   *width = s->width;
   *height = s->height;
   return s->depth;
+}
+
+int
+p_wincount(p_scr *s)
+{
+  return s? s->nwins : 0;
 }
 
 p_scr *

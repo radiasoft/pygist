@@ -203,16 +203,13 @@ gistobjects = ['src/gist/gist.o',
 unixobjects = ['src/play/unix/dir.o',
                'src/play/unix/files.o',
                'src/play/unix/fpuset.o',
-               'src/play/unix/handler.o',
                'src/play/unix/pathnm.o',
                'src/play/unix/slinks.o',
-               'src/play/unix/stdinit.o',
                'src/play/unix/timeu.o',
                'src/play/unix/timew.o',
                'src/play/unix/udl.o',
                'src/play/unix/uevent.o',
                'src/play/unix/ugetc.o',
-               'src/play/unix/uinbg.o',
                'src/play/unix/usernm.o',
                'src/play/unix/umain.o',
                'src/play/unix/uspawn.o']
@@ -288,6 +285,11 @@ if windows:
 elif cygwin:
     playobjects = unixobjects + winobjects + anyobjects + gistobjects
 elif macwithcocoa:
+    unixobjects.remove('src/play/unix/fpuset.o')
+    unixobjects.remove('src/play/unix/ugetc.o')
+    unixobjects.remove('src/play/unix/umain.o')
+    unixobjects.append('src/play/unix/stdinit.o')
+    unixobjects.append('src/play/unix/uinbg.o')
     playobjects = unixobjects + anyobjects + gistobjects
 else:
     playobjects = unixobjects + x11objects + anyobjects + gistobjects

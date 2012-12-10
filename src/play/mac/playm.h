@@ -23,6 +23,7 @@
 struct p_scr {
   int width, height, depth;
   int x0, y0;                  /* usable area may not start at (0,0) */
+  int nwins; /* window count */
 
   float sys_colors[15][4];
   CGColorSpaceRef colorspace;
