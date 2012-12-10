@@ -112,7 +112,7 @@ def ylimits(ymin='u',ymax='u'):
       displayed data. Arguments may be omitted only from the right. Use
       limits( xmin, xmax ) to accomplish the same function for the x-axis
       plot limits.  Note that the corresponding Yorick function for
-      ylimits is ``range'' - since this word is a Python built-in function,
+      ylimits is 'range' - since this word is a Python built-in function,
       I've changed the name to avoid the collision.
       SEE ALSO: plsys, limits, logxy, plg
    """

@@ -591,7 +591,7 @@ def get3_xy (xyz, *flg) :
       rm = (xyz - array ( [ go3_ [0], go3_ [1], go3_ [2]]))
       tmpxyz = dot (rm, lm)
    else:
-      raise Get3Error( "xyz has a bad shape: " + `shp`)
+      raise Get3Error( "xyz has a bad shape: " + repr(shp))
 
    # do optional perspective projection 
    zc = getzc3_ ()

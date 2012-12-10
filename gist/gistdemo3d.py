@@ -175,7 +175,7 @@ def run (*itest) :
       m3 = mesh3 (xyz, funcs = [r * (1. + y32)])
       del r, theta, phi, xyz, y32
 
-      print "   test uses " + `(nx - 1) * (ny - 1) * (nz - 1)` + " cells"
+      print "   test uses " + repr((nx - 1) * (ny - 1) * (nz - 1)) + " cells"
       elapsed = [0., 0., 0.]
       elapsed = timer_ (elapsed)
       elapsed0 = elapsed
@@ -419,7 +419,7 @@ def run (*itest) :
 #            nhex = ZLsc [i]
 #            istart = istart + ZLss [i] * ZLsc [i]
 #         else :
-#            raise NodeError( `ZLss[i]` + "is an incorrect number of nodes.")
+#            raise NodeError( repr(ZLss[i]) + "is an incorrect number of nodes.")
 
 #      m3 = mesh3 (x, y, z, funcs = [c], verts = [nz_tet, nz_pyr, nz_prism,
 #         nz_hex])

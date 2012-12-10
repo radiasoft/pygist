@@ -30,7 +30,7 @@ def zcen_ (x, i = 0) :
    dims = shape (x)
    ndims = len (dims)
    if i < 0 or i > ndims - 1 :
-      raise ZcenError( "i <" + `i+1` + "> is out of the range of x's dimensions<" + `ndims` +".")
+      raise ZcenError( "i <" + repr(i+1) + "> is out of the range of x's dimensions<" + repr(ndims) +".")
    if i == 0 :
       newx = (x [0:dims [0]-1] + x [1:dims [0]]) /2.0
    elif i == 1 :
@@ -63,7 +63,7 @@ def dif_ (x, i = 0) :
    dims = shape (x)
    ndims = len (dims)
    if i < 0 or i > ndims - 1 :
-      raise DifError( "i <" + `i+1` + "> is out of the range of x's dimensions <" + `ndims` +">.")
+      raise DifError( "i <" + repr(i+1) + "> is out of the range of x's dimensions <" + repr(ndims) +">.")
    if i == 0 :
       newx = x [1:dims [0]] - x [0:dims [0] - 1]
    elif i == 1 :

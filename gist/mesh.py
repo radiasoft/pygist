@@ -276,7 +276,7 @@ def plf ( z, y=None, x=None, ireg=None, mesh=None, **keywords ):
    plf ( z )
       Plot a filled mesh Y versus X.  Y, X, and IREG are as for plm.
       The Z array must have the same shape as Y and X, or one smaller
-      in both dimensions.  If Z is of type char, it is used `as is',
+      in both dimensions.  If Z is of type char, it is used 'as is',
       otherwise it is linearly scaled to fill the current palette, as
       with the bytscl function.
       (See the bytscl function for explanation of top, cmin, cmax.)
@@ -403,9 +403,9 @@ def plv ( vy, vx, y=None, x=None, ireg=None, mesh=None, **keywords ):
      The SCALE keyword is the conversion factor from the units of
      (VX,VY) to the units of (X,Y) -- a time interval if (VX,VY) is a velocity
      and (X,Y) is a position -- which determines the length of the
-     vector `darts' plotted at the (X,Y) points.  If omitted, SCALE is
+     vector 'darts' plotted at the (X,Y) points.  If omitted, SCALE is
      chosen so that the longest ray arrows have a length comparable
-     to a `typical' zone size.
+     to a 'typical' zone size.
      You can use the scalem keyword in pledit to make adjustments to the
      SCALE factor computed by default.
      The following keywords are legal (each has a separate help entry):

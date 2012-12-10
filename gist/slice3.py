@@ -146,7 +146,7 @@ def mesh3 (x, y = None, z = None, ** kw) :
          if len (f) != len (x) and len (f) != shape (dims) [0] :
             # if vertex-centered, f must be same size as x.
             # if zone centered, its length must match number of cells.
-            raise Mesh3Error( "F" + `i` + " is not a viable 3D cell value")
+            raise Mesh3Error( "F" + repr(i) + " is not a viable 3D cell value")
          m3 [2] = m3 [2] + [f]
          i = i + 1
       return m3
@@ -188,7 +188,7 @@ def mesh3 (x, y = None, z = None, ** kw) :
          m3 [2] = m3 [2] + [f]
          i = i + 1
       else :
-         raise Mesh3Error( "F" + `i` + " is not a viable 3D cell value")
+         raise Mesh3Error( "F" + repr(i) + " is not a viable 3D cell value")
 
    return m3
 
@@ -1186,10 +1186,10 @@ def getv3_rect (i, m3, chunk) :
    fi = m3 [2]
    i = i - 1
    if i < 0 or is_scalar (fi) or i >= len (fi) :
-      raise Getv3Error( "no such mesh function as F" + `i`)
+      raise Getv3Error( "no such mesh function as F" + repr(i))
    dims = m3 [1] [0]
    if dims == shape (fi [i]) :
-      raise Getv3Error( "mesh function F" + `i` + " is not vertex-centered")
+      raise Getv3Error( "mesh function F" + repr(i) + " is not vertex-centered")
    if len (shape (chunk)) != 1 :
       c = chunk
       # The difference here is that our arrays are 0-based, while
@@ -1230,11 +1230,11 @@ def getv3_irreg (i, m3, chunk) :
    fi = m3 [2]
    i = i - 1
    if i < 0 or is_scalar (fi) or i >= len (fi) :
-      raise Getv3Error( "no such function as F" + `i`)
+      raise Getv3Error( "no such function as F" + repr(i))
    # len (fi [i]) and the second dimension of m3 [1] [1] (xyz) should
    # be the same, i. e., there is a value associated with each coordinate.
    if len (fi [i]) != len (m3 [1] [1] [0]) :
-      raise Getv3Error( "mesh function F" + `i` + " is not vertex-centered.")
+      raise Getv3Error( "mesh function F" + repr(i) + " is not vertex-centered.")
 
    verts = m3 [1] [0]
    oldstart = chunk [0] [0]
@@ -1328,7 +1328,7 @@ def getc3_rect (i, m3, chunk, l, u, fsl, fsu, cells) :
    fi = m3 [2]
    m3 = m3 [1]
    if ( i < 1 or i > len (fi)) :
-      raise Getc3Error( "no such mesh function as F" + `i - 1`)
+      raise Getc3Error( "no such mesh function as F" + repr(i - 1))
    dims = m3 [0]
    if shape (fi [i - 1]) == dims :
       # it is a cell-centered quantity
@@ -1389,7 +1389,7 @@ def getc3_irreg (i, m3, chunk, l, u, fsl, fsu, cells) :
 
    fi = m3 [2]
    if i < 1 or i > len (fi) :
-      raise Getc3Error( "no such mesh function as F" + `i - 1`)
+      raise Getc3Error( "no such mesh function as F" + repr(i - 1))
    verts = m3 [1] [0]
    if isinstance(verts,list) :
       sizes = m3 [1] [2]
@@ -1405,7 +1405,7 @@ def getc3_irreg (i, m3, chunk, l, u, fsl, fsu, cells) :
          raise Getc3Error( "chunk argument is incomprehensible.")
 
    if len (fi [i - 1]) != shape (m3 [1] [1]) [1] :
-      raise Getc3Error( "F" + `i - 1` + " has the wrong size to be either zone-centered or node-centered.")
+      raise Getc3Error( "F" + repr(i - 1) + " has the wrong size to be either zone-centered or node-centered.")
    # vertex-centered case
    # First we need to pick up the vertex subscripts, which are
    # also the fi [i - 1] subscripts.
@@ -2083,7 +2083,7 @@ def pl3tree (nverts, xyzverts = None, values = None, plane = None,
       not isinstance(nverts [0],int) :
       print "Dim1 of xyzverts ", shape (xyzverts) [0], " sum (nverts) ",\
          sum (nverts), " sum (less (nverts, 3)) ", sum (less (nverts, 3)), \
-         " type (nverts [0]) ", `type (nverts [0])`
+         " type (nverts [0]) ", repr(type (nverts [0]))
       raise Pl3treeError( "illegal or inconsistent polygon list.")
    if isinstance(values,ndarray) and len (values) != len (nverts) and \
       len (values) != sum (nverts) :
@@ -2919,10 +2919,10 @@ def _pl3tree_prt (tree, depth) :
    if tree == None or tree == [] :
       return
    indent = (" " * (1 + 2 * depth)) [0:-1]
-   print indent + "+DEPTH= " + `depth`
+   print indent + "+DEPTH= " + repr(depth)
    if len (tree) != 4 :
       print indent + "***error - not a tree"
-   print indent + "plane= " + `tree [0]`
+   print indent + "plane= " + repr(tree [0])
    back = tree [1]
    list = tree [2]
    frnt = tree [3]
@@ -2932,17 +2932,17 @@ def _pl3tree_prt (tree, depth) :
       _pl3tree_prt (back, depth + 1)
 
    for leaf in list :
-      print indent + "leaf length= " + `len (leaf)`
-      print indent + "npolys= " + `len (leaf [0])` + \
-         ", nverts= " + `sum (leaf [0])` + ", max= " + `max (leaf [0])`
-      print indent + "nverts= " + `shape (leaf [1]) [0]` + \
-         ", nvals= " + `len (leaf [2])`
+      print indent + "leaf length= " + repr(len (leaf))
+      print indent + "npolys= " + repr(len (leaf [0])) + \
+         ", nverts= " + repr(sum (leaf [0])) + ", max= " + repr(max (leaf [0]))
+      print indent + "nverts= " + repr(shape (leaf [1]) [0]) + \
+         ", nvals= " + repr(len (leaf [2]))
 
    if frnt == None or frnt == [] :
       print  indent + "frnt = []"
    else :
          _pl3tree_prt (frnt, depth + 1)
-   print indent + "+DEPTH= " + `depth`
+   print indent + "+DEPTH= " + repr(depth)
 
 # ------------------------------------------------------------------------
 
@@ -3129,7 +3129,7 @@ def xyz3_irreg (m3, chunk) :
       retval [:, 2] = \
          reshape (take (xyz [2], ravel (ns)), (no_cells, 4))
    else :
-      raise xyz3Error( "Funny number of cell faces: " + `shp [1]`)
+      raise xyz3Error( "Funny number of cell faces: " + repr(shp [1]))
    return retval
 
 def xyz3_unif (m3, chunk) :

@@ -103,7 +103,7 @@ def grtest():
   x = 2*pi*arange(200, typecode = Float)/199.0
   for i in range(1,7):
     r = 0.5*i - (5-0.5*i)*cos(x)
-    s = "curve [" + `i` + "]"
+    s = "curve [" + repr(i) + "]"
     plg( r*sin(x), r*cos(x), marks=0, color=-4-i, legend = s)
   print "Test 11:  Commands: plg(r*sin(x), r*cos(x), color=-4-i)"
   print "A set of nested cardioids in the primary and secondary colors."
