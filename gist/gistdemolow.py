@@ -20,6 +20,10 @@ import time
 from math import pi
 
 def grtest():
+  import os
+  import gist
+  gistpathsave = os.environ.get('GISTPATH',None)
+  os.environ['GISTPATH'] = os.path.dirname(gist.__file__)
 
   print "\n\n         Pygist Comprehensive Graphics Test\n"
   print "This test suite is similar, but not exactly the same as yorick's grtest\n"
@@ -79,10 +83,10 @@ def grtest():
   unzoom()
 
   fma()
-  x = 10*pi*arange(200, typecode = Float)/199.0
+  x = 10*pi*arange(200)/199.0
   plg(sin(x), x)
   print "Test 9:  Commands: fma(); plg(sin(x), x)"
-  print "where x = 10*pi*arange(200, typecode = Float)/199.0"
+  print "where x = 10*pi*arange(200)/199.0"
   print "Five cycles of a sine wave on a new frame."
   print "Before you continue, try clicking with the mouse buttons:"
   print "Left button zooms in, right button zooms out, middle no zoom"
@@ -100,7 +104,7 @@ def grtest():
   unzoom()
 
   fma()
-  x = 2*pi*arange(200, typecode = Float)/199.0
+  x = 2*pi*arange(200)/199.0
   for i in range(1,7):
     r = 0.5*i - (5-0.5*i)*cos(x)
     s = "curve [" + repr(i) + "]"
@@ -144,7 +148,7 @@ def grtest():
   z = x+1j*y
   z = 5.*z/(5.+z*z)
   xx = z.real
-  yy = z.imaginary
+  yy = z.imag
   print "Test 15:  Commands: plm(y, x)"
   print "Quadrilateral mesh -- round with bites out of its sides."
   plm (yy, xx)
@@ -161,7 +165,7 @@ def grtest():
   unzoom()
 
   print "Test 17:  Commands: plfc(.); plc(.); plm(y,x, boundary=1, type=2)"
-  ireg = ones (xx.shape, Int)
+  ireg = ones (xx.shape, 'i')
   ireg [0, :] = 0
   ireg [:, 0] = 0
   plfc(mag(x+.5,y-.5),yy,xx,ireg,contours=8)
@@ -269,10 +273,10 @@ def grtest():
 
   nlist = arange(1,lenList+1) 
   n2list = arange(1,lenList+1) 
-  phase = zeros ( (lenList), Float ) 
-  theta = zeros ( (lenList), Float ) 
-  x0List = zeros ( (lenList), Float ) 
-  y0List = zeros ( (lenList), Float ) 
+  phase = zeros ( (lenList)) 
+  theta = zeros ( (lenList)) 
+  x0List = zeros ( (lenList)) 
+  y0List = zeros ( (lenList)) 
 
   for i in range(lenList):
      nlist[i] = n[list[i]-1]
@@ -347,6 +351,11 @@ def grtest():
   if quitnow(): return
   unzoom()
 
+  if gistpathsave is not None:
+      os.environ['GISTPATH'] = gistpathsave
+  else:
+      del os.environ['GISTPATH']
+
 def quitnow(prompt=""):
   s = raw_input(prompt)
   if s == 'q': return 1
@@ -363,7 +372,7 @@ def lissajous(animation):
 #  -- the centers describe semi-circular arcs of radius rc. 
 
    import os
-   t= 2*pi*arange(400, typecode = Float)/399.0
+   t= 2*pi*arange(400)/399.0
    na1= 1
    nb1= 5
    na2= 2
@@ -417,15 +426,15 @@ def lissajous(animation):
 
 # (nr X nc) array, each row an integer in the sequence [0, 1, ... ]
 def a1(nr,nc):
-   return reshape (array(concat1(nr,nc), Float), (nr,nc))
+   return reshape (array(concat1(nr,nc)), (nr,nc))
 
 # (n-1) square array, with each row == spanz(lb,ub,n)
 def a2(lb,ub,n):
-   return reshape (array((n-1)*spanz(lb,ub,n), Float), (n-1,n-1))
+   return reshape (array((n-1)*spanz(lb,ub,n)), (n-1,n-1))
   
 # (n) square array, with each row == span(lb,ub,n)
 def a3(lb,ub,n):
-   return reshape (array(n*span(lb,ub,n), Float), (n,n))
+   return reshape (array(n*span(lb,ub,n)), (n,n))
   
 # Half-hearted attempt at span(), which returns N equally-spaced
 # values in the sequence [lb, ..., ub]
