@@ -4,11 +4,11 @@
 #  NAME:  gist.py
 #
 #  CHANGES:
-#  11/08/04 mdh plh: Change test if color is a list; also test if array. 
-#  06/16/03 mdh plh: Added a keyword (height) for font size of labels. 
-#  04/07/03 mdh Modifications to plh to add labels below x-axis; removed 
+#  11/08/04 mdh plh: Change test if color is a list; also test if array
+#  06/16/03 mdh plh: Added a keyword (height) for font size of labels.
+#  04/07/03 mdh Modifications to plh to add labels below x-axis; removed
 #               legend and added label keyword.
-#  03/19/03 llc Dave Grote reported a bug in plfc:  nc==None should be 
+#  03/19/03 llc Dave Grote reported a bug in plfc:  nc==None should be
 #               nc is None.
 #  03/13/03 llc Add one NOTE on plfc.
 #  03/12/03 llc Updated doc comments.
@@ -17,7 +17,7 @@
 #  11/05/01 llc Use pydoc's help (not the one in help.py).
 #  10/30/01 llc Disable is_scalar call; type(arraytype) not implemented
 #               in Python.
-#               Also, merge in documentation (if it exists) from gist.help 
+#               Also, merge in documentation (if it exists) from gist.help
 #               after each function, so that pydoc's help can return it.
 #  10/12/01 llc Re-port of gist from archived version.
 #
@@ -25,14 +25,14 @@
 
 """
      Gist is a portable graphics package for scientific applications. It
-     can produce interactive graphics for Unix/Linux (X11), Windows, 
-     and Mac platforms, as well as produce file output conforming to ANSI 
+     can produce interactive graphics for Unix/Linux (X11), Windows,
+     and Mac platforms, as well as produce file output conforming to ANSI
      standard CGM or standard Postscript.
 
      Gist was developed by David H. Munro (munro1@llnl.gov) at
      Lawrence Livermore National Laboratory, as part of his Yorick
-     scientific interpreter. Lee Busby was the original author of 
-     the Python Gist C extension module.  He adapted much of the 
+     scientific interpreter. Lee Busby was the original author of
+     the Python Gist C extension module.  He adapted much of the
      module from similar code written by Munro for Yorick.
 
      Copyright (c) 1996, 1997, The Regents of the University of
@@ -41,8 +41,8 @@
 
      *********************************************************************
 
-     This version of PyGist is built on the portability layer from 
-     Yorick 1.5.  The documentation for each function has been 
+     This version of PyGist is built on the portability layer from
+     Yorick 1.5.  The documentation for each function has been
      integrated with the function using pydoc.  Type:
 
         help(function_name)
@@ -102,7 +102,7 @@ def pltitle(title):
 
 #  ---------------------------------------------------------------------
 
-def ylimits(ymin='u',ymax='u'): 
+def ylimits(ymin='u',ymax='u'):
    """
    ylimits(ymin, ymax)
       Set the y-axis plot limits in the current coordinate system to
@@ -130,22 +130,22 @@ def moush(*arg):
    narg = len(arg)
    if narg == 3: # (y, x, ireg)
       xy = mouse (-1, 0, "<Click mouse in mesh>")
-      if xy == None: return None
+      if xy is None: return None
       return mesh_loc (xy[1], xy[0], arg[0], arg[1], arg[2]);
    elif narg == 2: # (y, x)
       xy = mouse (-1, 0, "<Click mouse in mesh>")
-      if xy == None: return None
+      if xy is None: return None
       return mesh_loc (xy[1], xy[0], arg[0], arg[1]);
    elif narg == 0: # ()
       xy = mouse (-1, 0, "<Click mouse in mesh>")
-      if xy == None: return None
+      if xy is None: return None
       return mesh_loc (xy[1], xy[0]);
    else:
       print "Mouse takes 0, 2, or 3 args: ( [ y, x [ , ireg ] ] )"
       return None
 
 #  ---------------------------------------------------------------------
-#  PURPOSE:  Create an encapsulated PostScript file.  
+#  PURPOSE:  Create an encapsulated PostScript file.
 #            Requires Ghostscript and its associated ps2epsi utility.
 #  ---------------------------------------------------------------------
 
@@ -248,7 +248,7 @@ def plmk(y,x=None,marker=None,width=None,color=None,msize=None):
 
    z = None
 
-   if marker == None:
+   if marker is None:
       marker = _plmk_markers[(_plmk_count)%7]
       _plmk_count = _plmk_count + 1
    elif isinstance(marker,int):
@@ -256,19 +256,19 @@ def plmk(y,x=None,marker=None,width=None,color=None,msize=None):
 
    xm = marker[0]
    ym = marker[1]
-   if not msize: msize = _plmk_msize;
-   if msize:
+   if msize is None: msize = _plmk_msize;
+   if msize is not None:
       xm = xm * msize;
       ym = ym * msize;
 
-   if not color: color = _plmk_color;
+   if color is None: color = _plmk_color;
    ecolor = color;
    if isinstance(color,type("")):
       color = color_dict[color];
-  
-   if not width: width = _plmk_width;
+
+   if width is None: width = _plmk_width;
    if width >= 10:
-      if not color:
+      if color is None:
          color = ecolor = -2 # magic number for "fg"
       z = ones(1+len(y)) * color
       z = z.astype(numpy.ushort) # convert array to type <unsigned char>
@@ -276,7 +276,7 @@ def plmk(y,x=None,marker=None,width=None,color=None,msize=None):
 
    n = ones(1+len(y),'i');
    n[0] = len(ym);
-   if not x: x = 1 + arange(len(y));
+   if x is None: x = 1 + arange(len(y));
    plfp( z, concatenate((ym,y)), concatenate((xm,x)),n,
       edges=1, ewidth=width, ecolor=ecolor)
 
@@ -290,10 +290,10 @@ def plmk_default(color=None, msize=None, width=None):
    restores the initial default values.
    """
    global _plmk_color, _plmk_width, _plmk_msize
-   if color: _plmk_color = color
-   if width: _plmk_width = width
-   if msize: _plmk_msize = msize
-   if not (color or width or msize):
+   if color is not None: _plmk_color = color
+   if width is not None: _plmk_width = width
+   if msize is not None: _plmk_msize = msize
+   if color is None and width is None and msize is None:
       _plmk_msize = _plmk_color = _plmk_width = None
 
 from types import *
@@ -430,7 +430,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
       vc = zeros (n + 2, 'd')
       vc [0] = vcmin
       vc [n + 1] = vcmax
-      if scale == "lin" or scale == None :
+      if scale == "lin" or scale is None :
           #    This stuff is in lieu of the spann stuff in Yorick.
           vc [1:n + 1] = vcmin + arange (1, n + 1, 1, 'd') * \
              (vcmax - vcmin) / (n + 1)
@@ -457,7 +457,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
       vc [1:n + 1] = sort (contours)
    else :
       raise ContourError( "Incorrect contour specification.")
-   if colors == None :
+   if colors is None :
       colors = (arange (0, n + 1, 1, 'd') * (199. / n)).astype ('B')
    else :
       colors = array (colors)
@@ -466,7 +466,7 @@ def plfc (z, y, x, ireg, contours = 8, colors = None, region = 0,
       if colors.dtype.char != 'B' :
          colors = bytscl (colors)
 
-   if triangle == None :
+   if triangle is None :
       triangle = zeros (z.shape, numpy.intc)
 
   # Set mesh first
@@ -508,8 +508,8 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
       plots, you can execute
       window(style="work.gs")
       which will reset the window to the usual work.gs style sheet.
-      
-      
+
+
       The following keywords are legal (each has a separate help entry):
     KEYWORDS: width, hide, color, height
     SEE ALSO: plg, plm, plc, plv, plf, pli, plt, pldj, plfp, plmesh
@@ -520,7 +520,7 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
       'green':-6, 'blue':-7, 'cyan':-8, 'magenta':-9, 'yellow':-10 }
    n = len(y)
    barx = [[]] * n
-   if x==None:
+   if x is None:
       for i in range(n):
          barx[i] = array([i,i,i+1,i+1])
    else:
@@ -546,7 +546,7 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
    bary = [[]] * n
    for i in range(n):
       bary[i] = array([0,y[i],y[i],0])
-   if labels:
+   if labels is not None:
       if current_window() < 0:
          window(style="boxed.gs",legends=0)
       style = get_style()
@@ -558,7 +558,7 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
          flags = flags & ( ~ 99) # Switch off horizontal tick marks, labels
          style['systems'][0]['ticks']['horizontal']['flags'] = flags
          set_style(style)
-   if color:
+   if color is not None:
       if not isinstance(color,list) and not isinstance(color,ndarray):
          color = [color] * n
       for i in range(n):
@@ -567,12 +567,12 @@ def plh (y, x=None, width=1, hide=0, color=None, labels=None, height=None):
          plfp(array([z],'B'),bary[i],barx[i],[4])
    for i in range(n):
       plg(bary[i],barx[i],width=width,hide=hide,marks=0)
-   if labels:
+   if labels is not None:
       [left,right,bottom,top] = viewport()
       hticks = style['systems'][0]['ticks']['horizontal']
       scale = (right-left)/(barx[-1][-1]-barx[0][0])
       y = bottom - hticks['labelOff'] + hticks['tickLen'][0] + hticks['tickOff']
-      if height:
+      if height is not None:
          for i in range(n):
             x = left + scale * ((barx[i][0]+barx[i][-1])/2. - barx[0][0])
             plt(labels[i],x,y,justify="CT",height=height)
