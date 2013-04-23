@@ -2,7 +2,7 @@ Metadata-Version: 1.0
 Name: pygist
 Version: 2.2.0
 Summary: Python Wrapped Gist Graphics Package from Yorick
-Home-page: http://www.llnl.gov
+Home-page: https://dpgrote@bitbucket.org/dpgrote/pygist.git
 Author: Lila Chase; Michiel de Hoon for the Windows version; David Grote
 Author-email: dpgrote@lbl.gov
 License: UNKNOWN

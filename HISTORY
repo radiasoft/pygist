@@ -1,7 +1,13 @@
-$Id: HISTORY,v 1.1 2009/11/19 23:44:45 dave Exp $
 
 Change History for pygist
 --------------------------
+
+*** Release 2.2.0 ***
+
+V130422 Dave Grote
+
+        1. Updated to match the Gist from Yorick version 2.2.
+           Graphics windows can now be of arbitrary size.
 
 V060600 Dave Grote
 
