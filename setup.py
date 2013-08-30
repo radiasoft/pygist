@@ -55,7 +55,6 @@ __revision__ = "$Id: setup.py,v 1.9 2011/09/28 22:50:28 grote Exp $"
 import os
 import os.path
 import sys
-import time
 import site
 
 from distutils.core import setup, Extension
@@ -452,9 +451,11 @@ if run_install:
     os.chmod(os.path.join(os.path.dirname(sys.executable),'gist'),os.stat(sys.executable).st_mode)
 
     # --- Give the gistC.so shared object the same permissions as python
-    for d in site.getsitepackages():
-        dg = os.path.join(d,'gist')
-        if os.access(dg,os.F_OK):
-            os.chmod(os.path.join(dg,'gistC.so'),os.stat(sys.executable).st_mode)
+    # --- getsitepackages is only supported in version 2.7 and newer.
+    if sys.hexversion >= 0x2070000:
+        for d in site.getsitepackages():
+            dg = os.path.join(d,'gist')
+            if os.access(dg,os.F_OK):
+                os.chmod(os.path.join(dg,'gistC.so'),os.stat(sys.executable).st_mode)
 
 # Finished.
