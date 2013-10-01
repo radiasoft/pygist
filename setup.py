@@ -56,6 +56,7 @@ import os
 import os.path
 import sys
 import site
+import glob
 
 from distutils.core import setup, Extension
 #from setuptools import setup, Extension
@@ -456,6 +457,11 @@ if run_install:
         for d in site.getsitepackages():
             dg = os.path.join(d,'gist')
             if os.access(dg,os.F_OK):
-                os.chmod(os.path.join(dg,'gistC.so'),os.stat(sys.executable).st_mode)
+                # --- This is needed for python3, since extra stuff is
+                # --- added to the suffix.
+                # --- Should maybe do some error checking in case no gistC
+                # --- is found.
+                for gist in glob.iglob(os.path.join(dg,'gistC*.so')):
+                    os.chmod(gist,os.stat(sys.executable).st_mode)
 
 # Finished.
