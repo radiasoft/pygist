@@ -2266,7 +2266,7 @@ static void PermitNewline (int nSpaces)
 
 static void PrintColor (char *line, unsigned long color, int suffix)
 {
-  if (color >= 0) {
+  if (color < 242) {
     sprintf (line, "color= %ld,", color);
     PrintFunc (line);
   } else if (color == P_FG)
@@ -2287,6 +2287,18 @@ static void PrintColor (char *line, unsigned long color, int suffix)
     PrintFunc ("color= \"yellow\"");
   else if (color == P_GREEN)
     PrintFunc ("color= \"green\"");
+  else if (color == P_BLACK)
+    PrintFunc ("color= \"black\"");
+  else if (color == P_WHITE)
+    PrintFunc ("color= \"white\"");
+  else if (color == P_GRAYD)
+    PrintFunc ("color= \"grayd\"");
+  else if (color == P_GRAYC)
+    PrintFunc ("color= \"grayc\"");
+  else if (color == P_GRAYB)
+    PrintFunc ("color= \"grayb\"");
+  else if (color == P_GRAYA)
+    PrintFunc ("color= \"graya\"");
   else
     PrintFunc ("color= <unknown>");
   PrintSuffix (suffix);
@@ -2575,7 +2587,7 @@ static long build_kwt (PyObject *kd, char *kwlist[], PyObject * kwt[])
     kword = PyString_AsString (kob);
     if (!verify_kw (kword, kwlist)) {
       sprintf (errstr, "Unrecognized keyword: %s", kword);
-      (long) ERRSS (errstr);
+      ERRMSG (errstr);
       return -1;
     }
   }
@@ -2695,8 +2707,8 @@ static PyObject *debug_array (PyObject * self, PyObject * args)
  }
  aarray = (PyArrayObject *) oarray;
  TO_STDOUT("Data pointer: %p; nd %d; dim1 %d; type %c.\n", PyArray_DATA(aarray),
-   PyArray_NDIM(aarray), (int)PyArray_DIMS(aarray) [0], PyArray_DESCR(aarray)); flush_stdout();
- if (PyArray_DESCR(aarray) == 'i') {
+   PyArray_NDIM(aarray), (int)PyArray_DIMS(aarray) [0], PyArray_TYPE(aarray)); flush_stdout();
+ if (PyArray_TYPE(aarray) == NPY_INT) {
     TO_STDOUT ("%d ", ( (int *)(PyArray_DATA(aarray))) [0]); flush_stdout();
     for (i = 1, max = ( (int *)(PyArray_DATA(aarray))) [0]; i < PyArray_DIMS(aarray) [0]; i ++){
        if ( ( (int *)(PyArray_DATA(aarray))) [i] > max) max = ( (int *)(PyArray_DATA(aarray))) [i];
@@ -2706,7 +2718,7 @@ static PyObject *debug_array (PyObject * self, PyObject * args)
        }
     TO_STDOUT ("maximum value is %d.\n", max); flush_stdout();
     }
- else if (PyArray_DESCR(aarray) == 'l') {
+ else if (PyArray_TYPE(aarray) == NPY_LONG) {
     TO_STDOUT ("%ld ", ( (long *)(PyArray_DATA(aarray))) [0]); flush_stdout();
     for (i = 1, mmax = ( (long *)(PyArray_DATA(aarray))) [0]; i < PyArray_DIMS(aarray) [0]; i ++){
        if ( ( (long *)(PyArray_DATA(aarray))) [i] > mmax) mmax = ( (long *)(PyArray_DATA(aarray))) [i];
@@ -2771,7 +2783,7 @@ static char *expand_pathname (const char *name)
   return path;
 
 errexit:
-  if(!PyErr_Occurred()) ERRSS (errstr ? errstr : "error in expand_path") ; 
+  if(!PyErr_Occurred()) ERRMSG (errstr ? errstr : "error in expand_path") ; 
   DECREF_AND_ZERO(p1);
   DECREF_AND_ZERO(p2);
   DECREF_AND_ZERO(p3);
@@ -4081,7 +4093,7 @@ static PyObject *pldefault (PyObject * self, PyObject * args, PyObject * kd)
   }
 
   if(kwt[22]) {
-    char *style;
+    char *style = 0;
     SAFE_FREE(defaultStyle);
     SETKW(kwt[22], style,           setkw_string,   dfltKeys[22]);
     if(style && style[0]){
@@ -4094,7 +4106,7 @@ static PyObject *pldefault (PyObject * self, PyObject * args, PyObject * kd)
   SETKW(kwt[23], defaultLegends,    setkw_boolean,  dfltKeys[23]);
 
   if(kwt[24]) {
-    char *name;
+    char *name = 0;
     SAFE_FREE(defaultPalette);
     SETKW(kwt[24], name,            setkw_string,   dfltKeys[24]);
     if(name && name[0]){
@@ -4571,7 +4583,7 @@ static PyObject *plf (PyObject * self, PyObject * args, PyObject * kd)
     }
     else if ( A_NDIM(zop) == 3 )  {
        /*  3xNXxNY */
-       if ( PyArray_DIM(zop,0) != 3 )  {
+       if ( A_DIM(zop,0) != 3 )  {
           return ERRSS ("expecting NXxNY or 3xNXxNY array as argument to plf");
        }
        GET_ARR (zap, zop, Py_GpColor, 3, PyObject *);
@@ -4722,7 +4734,7 @@ static PyObject *plfp (PyObject * self, PyObject * args, PyObject * kd)
     }
     else if ( A_NDIM(zop) == 2 )  {
        /*  3xN */
-       if ( PyArray_DIM(zop,0) != 3 )  {
+       if ( A_DIM(zop,0) != 3 )  {
           return ERRSS ("expecting N or 3xN array as argument to plfp");
        }
        GET_ARR (zap, zop, Py_GpColor, 2, PyObject *);
@@ -5010,7 +5022,7 @@ static PyObject *pli (PyObject * self, PyObject * args, PyObject * kd)
     }
     else if ( A_NDIM(zop) == 3 )  {
        /*  3xNXxNY */
-       if ( PyArray_DIM(zop,0) != 3 )  {
+       if ( A_DIM(zop,0) != 3 )  {
           return ERRSS ("expecting NXxNY or 3xNXxNY array as argument to pli"); 
        }
        GET_ARR (zap, zop, Py_GpColor, 3, PyObject *);
@@ -6021,7 +6033,7 @@ static long set_pyMsh(PyObject *args, char *errstr, PyObject *tri)
 
   case 2: /* Arguments were (y, x). */
     TRY(set_yx(op1, op2), 0);
-    TRY(set_def_reg(PyArray_DIM(op1, 0), PyArray_DIM(op1, 1)), 0); /* Default region array. */
+    TRY(set_def_reg(A_DIM(op1, 0), A_DIM(op1, 1)), 0); /* Default region array. */
     break;
 
   case 1: /* Arguments were (ireg). */
@@ -6058,8 +6070,8 @@ static long set_reg (PyObject *op)
   if (!pyMsh.y)  {
     return (long) ERRSS ("No current mesh - ireg not set - set (y, x) first");
   }
-  nr = PyArray_DIM (op, 0);
-  nc = PyArray_DIM (op, 1);
+  nr = A_DIM (op, 0);
+  nc = A_DIM (op, 1);
   if (PyArray_DIM (pyMsh.y, 0) != nr || PyArray_DIM (pyMsh.y, 1) != nc)  {
     return (long) ERRSS ("(ireg) must match (y, x) in shape");
   }
