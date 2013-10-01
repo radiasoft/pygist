@@ -258,19 +258,19 @@ pyg_puts(const char *s)
 /* Macros defining most of my uses of a PyArrayObject.  */
 
 /* The number of dimensions of the array. */
-#define A_NDIM(a) (((PyArrayObject *)a)->nd)
+#define A_NDIM(a) PyArray_NDIM((PyArrayObject *)a)
 
 /* The length of the ith dimension of the array. */
-#define A_DIM(a,i) (((PyArrayObject *)a)->dimensions[i])
+#define A_DIM(a,i) PyArray_DIM((PyArrayObject *)a,i)
 
 /* The total number of elements in the array. */
 #define A_SIZE(a) PyArray_Size((PyObject *)a)
 
 /* The type number of the array. */
-#define A_TYPE(a) (int)(((PyArrayObject *)a)->descr->type_num)
+#define A_TYPE(a) (int)(PyArray_TYPE((PyArrayObject *)a))
 
 /* The pointer to the array data. */
-#define A_DATA(a) (((PyArrayObject *)a)->data)
+#define A_DATA(a) PyArray_DATA((PyArrayObject *)a)
 
 /* Object is non-null and a PyArrayObject */
 #define isARRAY(a) ((a) && ( (PyObject *)a != Py_None) && PyArray_Check((PyArrayObject *)a))
@@ -303,9 +303,9 @@ pyg_puts(const char *s)
   PyArray_SimpleNewFromData(ndim,dim,type,data)), \
   (cast)PyErr_NoMemory ())
 /* Array owns its data so if DECREF'ed, its data will be freed */
-#define SET_OWN(op) ( (PyArrayObject *) op)->flags |= NPY_OWNDATA
+#define SET_OWN(op) PyArray_FLAGS((PyArrayObject *)op) |= NPY_OWNDATA
 /* Array does not own its data so if DECREF'ed, its data will not be freed */
-#define UNSET_OWN(op) ( (PyArrayObject *) op)->flags &= ~NPY_OWNDATA
+#define UNSET_OWN(op) PyArray_FLAGS((PyArrayObject *)op) &= ~NPY_OWNDATA
 /* Create a block of memory */
 #define NEW_MEM(mem,n,type,cast) \
   TRY(addToMemList((void *)(mem=(type *)malloc(n*sizeof(type)))), \
