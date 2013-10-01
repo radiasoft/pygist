@@ -96,6 +96,7 @@ extern "C" {
 
 #include "pyfpe.h"
 
+#define NPY_NO_DEPRECATED_API 8
 #include "numpy/arrayobject.h"
 
 #include "hlevel.h"
@@ -303,9 +304,9 @@ pyg_puts(const char *s)
   PyArray_SimpleNewFromData(ndim,dim,type,data)), \
   (cast)PyErr_NoMemory ())
 /* Array owns its data so if DECREF'ed, its data will be freed */
-#define SET_OWN(op) PyArray_FLAGS((PyArrayObject *)op) |= NPY_OWNDATA
+#define SET_OWN(op) PyArray_ENABLEFLAGS((PyArrayObject *)op,NPY_ARRAY_OWNDATA)
 /* Array does not own its data so if DECREF'ed, its data will not be freed */
-#define UNSET_OWN(op) PyArray_FLAGS((PyArrayObject *)op) &= ~NPY_OWNDATA
+#define UNSET_OWN(op) PyArray_CLEARFLAGS((PyArrayObject *)op,NPY_ARRAY_OWNDATA)
 /* Create a block of memory */
 #define NEW_MEM(mem,n,type,cast) \
   TRY(addToMemList((void *)(mem=(type *)malloc(n*sizeof(type)))), \
@@ -2636,7 +2637,7 @@ static PyObject *bytscl (PyObject * self, PyObject * args, PyObject * kd)
   TRY (GrabByteScale(&kwt[0], &bsKeys[0], &scale, &offset, &zmin, &zmax,
      z, (int *) 0, 0, len + 1, 2L, 1), (PyObject *) NULL);
   TRY (zc = PushColors(z, len, zmin, zmax, scale, offset), (PyObject *) NULL);
-  NEW_ARR_FROMARRAY (zcap, zap->nd, zap->dimensions, Py_GpColor, PyObject *);
+  NEW_ARR_FROMARRAY (zcap, PyArray_NDIM(zap), PyArray_DIMS(zap), Py_GpColor, PyObject *);
   Py_DECREF (zap);
   zc1 = (GpColor *) A_DATA (zcap);
   for (i = 0; i < len; i++) zc1[i] = zc[i];
@@ -2693,23 +2694,23 @@ static PyObject *debug_array (PyObject * self, PyObject * args)
     return ERRSS ("debug_array: argument should be a NumPy array.");
  }
  aarray = (PyArrayObject *) oarray;
- TO_STDOUT("Data pointer: %p; nd %d; dim1 %d; type %c.\n", aarray->data,
-   aarray->nd, (int)aarray->dimensions [0], aarray->descr->type); flush_stdout();
- if (aarray->descr->type == 'i') {
-    TO_STDOUT ("%d ", ( (int *)(aarray->data)) [0]); flush_stdout();
-    for (i = 1, max = ( (int *)(aarray->data)) [0]; i < aarray->dimensions [0]; i ++){
-       if ( ( (int *)(aarray->data)) [i] > max) max = ( (int *)(aarray->data)) [i];
-       TO_STDOUT ("%d ", ( (int *)(aarray->data)) [i]);
+ TO_STDOUT("Data pointer: %p; nd %d; dim1 %d; type %c.\n", PyArray_DATA(aarray),
+   PyArray_NDIM(aarray), (int)PyArray_DIMS(aarray) [0], PyArray_DESCR(aarray)); flush_stdout();
+ if (PyArray_DESCR(aarray) == 'i') {
+    TO_STDOUT ("%d ", ( (int *)(PyArray_DATA(aarray))) [0]); flush_stdout();
+    for (i = 1, max = ( (int *)(PyArray_DATA(aarray))) [0]; i < PyArray_DIMS(aarray) [0]; i ++){
+       if ( ( (int *)(PyArray_DATA(aarray))) [i] > max) max = ( (int *)(PyArray_DATA(aarray))) [i];
+       TO_STDOUT ("%d ", ( (int *)(PyArray_DATA(aarray))) [i]);
        if (i % 10 == 0) TO_STDOUT ("\n");
        flush_stdout();
        }
     TO_STDOUT ("maximum value is %d.\n", max); flush_stdout();
     }
- else if (aarray->descr->type == 'l') {
-    TO_STDOUT ("%ld ", ( (long *)(aarray->data)) [0]); flush_stdout();
-    for (i = 1, mmax = ( (long *)(aarray->data)) [0]; i < aarray->dimensions [0]; i ++){
-       if ( ( (long *)(aarray->data)) [i] > mmax) mmax = ( (long *)(aarray->data)) [i];
-       TO_STDOUT ("%ld ", ( (long *)(aarray->data)) [i]);
+ else if (PyArray_DESCR(aarray) == 'l') {
+    TO_STDOUT ("%ld ", ( (long *)(PyArray_DATA(aarray))) [0]); flush_stdout();
+    for (i = 1, mmax = ( (long *)(PyArray_DATA(aarray))) [0]; i < PyArray_DIMS(aarray) [0]; i ++){
+       if ( ( (long *)(PyArray_DATA(aarray))) [i] > mmax) mmax = ( (long *)(PyArray_DATA(aarray))) [i];
+       TO_STDOUT ("%ld ", ( (long *)(PyArray_DATA(aarray))) [i]);
        if (i % 10 == 0) TO_STDOUT ("\n");
        flush_stdout();
        }
@@ -5916,14 +5917,14 @@ static void print_array_stats(PyArrayObject *op)
   int i,ne;
   double *dp;
   TO_STDERR("Data pointer: %p Base pointer: %p\n", op->data, op->base);
-  TO_STDERR("Num dims: %d Flags: %d\n", op->nd, op->flags);
+  TO_STDERR("Num dims: %d Flags: %d\n", PyArray_NDIM(op), op->flags);
   TO_STDERR("Dims & strides:");
-  for(i=0; i<op->nd; i++)
-    TO_STDERR(" i: %d dim: %d stride: %d",i,op->dimensions[i], op->strides[i]);
+  for(i=0; i<PyArray_NDIM(op); i++)
+    TO_STDERR(" i: %d dim: %d stride: %d",i,PyArray_DIMS(op), op->strides[i]);
   TO_STDERR("\n");
-  ne = op->dimensions[0];
-  for(i=1; i<op->nd; i++)
-    ne *= op->dimensions[i];
+  ne = PyArray_DIMS(op);
+  for(i=1; i<PyArray_NDIM(op); i++)
+    ne *= PyArray_DIMS(op);
   TO_STDERR("Data: (ne = %d)", ne);
   for(i=0,dp = (double *)op->data; i < ne; i++, dp++)
     TO_STDERR(" %.1g", *dp);
@@ -6047,8 +6048,8 @@ static long set_reg (PyObject *op)
   long *p2;
   PyArrayObject *ra2, *ra1;
 
-  /* printf("set_reg %d %d %d %d\n,isARRAY(op) , (A_NDIM(op) == 2) , A_TYPE(op) == NPY_LONG , A_TYPE(op) == PyArray_INT); */
-  ok = (isARRAY(op) && (A_NDIM(op) == 2) && (A_TYPE(op) == NPY_LONG || A_TYPE(op) == PyArray_INT));
+  /* printf("set_reg %d %d %d %d\n,isARRAY(op) , (A_NDIM(op) == 2) , A_TYPE(op) == NPY_LONG , A_TYPE(op) == NPY_INT); */
+  ok = (isARRAY(op) && (A_NDIM(op) == 2) && (A_TYPE(op) == NPY_LONG || A_TYPE(op) == NPY_INT));
 
   if (!ok) {
      return (long) ERRSS ("(ireg) must be a 2-D int array");
@@ -6065,7 +6066,7 @@ static long set_reg (PyObject *op)
 
   ne = nr * nc;
   newlen = ne + nc + 1;
-  NEW_ARR (ra1, 1, &newlen, PyArray_INT, long);
+  NEW_ARR (ra1, 1, &newlen, NPY_INT, long);
   p1 = (int *) A_DATA (ra1);
   GET_ARR (ra2, op, NPY_LONG, 2, long);
   p2 = (long *) A_DATA (ra2);
@@ -8909,15 +8910,15 @@ int set_axis_style(PyObject *dictionary, GaAxisStyle *axis)
   { ERRMSG("tickLen is not a NumPy array");
     return 0;
   }
-  if (tickLen->nd != 1)
+  if (PyArray_NDIM(tickLen) != 1)
   { ERRMSG("tickLen should be one-dimensional");
     return 0;
   }
-  if (tickLen->descr->type_num != NPY_DOUBLE)
+  if (PyArray_TYPE(tickLen) != NPY_DOUBLE)
   { ERRMSG("tickLen array should be of type float");
     return 0;
   }
-  if(tickLen->dimensions[0]!=TICK_LEVELS)
+  if(PyArray_DIM(tickLen,0)!=TICK_LEVELS)
   { ERRMSG("tickLen array has incorrect length");
     return 0;
   }
@@ -9010,15 +9011,15 @@ int set_system(PyObject *dictionary, GfakeSystem *system)
   { ERRMSG("viewport is not a NumPy array");
     return 0;
   }
-  if (viewport->nd != 1)
+  if (PyArray_NDIM(viewport) != 1)
   { ERRMSG("viewport should be one-dimensional");
     return 0;
   }
-  if (viewport->descr->type_num != NPY_DOUBLE)
+  if (PyArray_TYPE(viewport) != NPY_DOUBLE)
   { ERRMSG("viewport array should be of type float");
     return 0;
   }
-  if(viewport->dimensions[0]!=4)
+  if(PyArray_DIM(viewport,0)!=4)
   { ERRMSG("viewport array should have length 4");
     return 0;
   }
