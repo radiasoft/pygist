@@ -140,6 +140,16 @@ class config_pygist (config):
         # --- Get the C compiler and flags that was used to build python
         cc = sysconfig.get_config_var('CC')
         ccshared = sysconfig.get_config_var('CCSHARED')
+        if darwin:
+            # --- Remove any -arch arguments since it mucks things up on Darwin
+            while 1:
+                try:
+                    ccsharedlist = ccshared.split()
+                    index = ccsharedlist.index('-arch')
+                    del ccsharedlist[index:index+2]
+                    ccshared = ' '.join(ccsharedlist)
+                except ValueError:
+                    break
         flags = ''
         if cc: flags += 'CC="%s" '%cc
         if ccshared: flags += 'CFLAGS="%s" '%ccshared
