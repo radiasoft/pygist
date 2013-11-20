@@ -303,10 +303,17 @@ pyg_puts(const char *s)
   TRY(addToArrayList(op=\
   PyArray_SimpleNewFromData(ndim,dim,type,data)), \
   (cast)PyErr_NoMemory ())
-/* Array owns its data so if DECREF'ed, its data will be freed */
-#define SET_OWN(op) PyArray_ENABLEFLAGS((PyArrayObject *)op,NPY_ARRAY_OWNDATA)
-/* Array does not own its data so if DECREF'ed, its data will not be freed */
-#define UNSET_OWN(op) PyArray_CLEARFLAGS((PyArrayObject *)op,NPY_ARRAY_OWNDATA)
+#ifdef NPY_ARRAY_OWNDATA
+  /* Array owns its data so if DECREF'ed, its data will be freed */
+  #define SET_OWN(op) PyArray_ENABLEFLAGS((PyArrayObject *)op,NPY_ARRAY_OWNDATA)
+  /* Array does not own its data so if DECREF'ed, its data will not be freed */
+  #define UNSET_OWN(op) PyArray_CLEARFLAGS((PyArrayObject *)op,NPY_ARRAY_OWNDATA)
+#else
+  /* Array owns its data so if DECREF'ed, its data will be freed */
+  #define SET_OWN(op) ( (PyArrayObject *) op)->flags |= NPY_OWNDATA
+  /* Array does not own its data so if DECREF'ed, its data will not be freed */
+  #define UNSET_OWN(op) ( (PyArrayObject *) op)->flags &= ~NPY_OWNDATA
+#endif
 /* Create a block of memory */
 #define NEW_MEM(mem,n,type,cast) \
   TRY(addToMemList((void *)(mem=(type *)malloc(n*sizeof(type)))), \
