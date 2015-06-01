@@ -6,7 +6,7 @@
 #
 #  NAME:     setup.py
 #
-#  PURPOSE:  Faciliate installation of pygist module.  
+#  PURPOSE:  Faciliate installation of pygist module.
 #
 #  EXECUTE LINE:
 #     python setup.py config           (do the configuration - required)
@@ -14,7 +14,7 @@
 #     python setup.py build -g install (build a debug version and install)
 #     python setup.py install          (does both build and install)
 #     python setup.py sdist            (make a distribution version)
-# 
+#
 #  CHANGES:
 #  10/28/01 llc Originated.
 #  12/06/01 llc Replace hardwired path for Numeric include directory.
@@ -25,7 +25,7 @@
 #               Add cygwin.
 #  11/01/02 llc Remove readline and cur (curses) libraries.
 #  11/04/02 llc For sdist, omit making libpyg.a.
-#  11/11/02 mdh This script was completely rewritten by Michiel de Hoon 
+#  11/11/02 mdh This script was completely rewritten by Michiel de Hoon
 #               to ensure dependency of gistCmodule.so on libpyg.a.
 #           llc No need to remove pscom.ps (similar to ps.ps).
 #               List gfiles rather than use listdir.
@@ -34,7 +34,7 @@
 #               /usr/local/include needed on aix5.
 #  11/15/02 llc Use a third implementation approach by default.
 #               PyOS_InputHook/u_waiter approach is enabled by defining
-#               USE_U_WAITER. 
+#               USE_U_WAITER.
 #  12/27/02 mdh Rework to include config option, which works on Cygwin,
 #               Windows, and Mac OS X, and will work on Unix/Linux when
 #               python distutils is fixed.
@@ -463,7 +463,7 @@ if run_install:
 
     # --- Give the gistC.so shared object the same permissions as python
     # --- getsitepackages is only supported in version 2.7 and newer.
-    if sys.hexversion >= 0x2070000:
+    if hasattr(site, 'getsitepackages'):
         for d in site.getsitepackages():
             dg = os.path.join(d,'gist')
             if os.access(dg,os.F_OK):
